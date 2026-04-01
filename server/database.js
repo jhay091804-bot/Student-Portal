@@ -1,0 +1,78 @@
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+const bcrypt = require('bcryptjs');
+
+const dbPath = path.resolve(__dirname, 'portal.db');
+const db = new sqlite3.Database(dbPath);
+
+const initDb = () => {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      // Users table (Admins and Students)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS users (
+          id TEXT PRIMARY KEY,
+          password TEXT NOT NULL,
+          name TEXT NOT NULL,
+          email TEXT UNIQUE,
+          role TEXT NOT NULL DEFAULT 'student',
+          program TEXT,
+          year TEXT,
+          avg TEXT DEFAULT '0.00',
+          balance REAL DEFAULT 0.00,
+          avatar TEXT,
+          is_verified INTEGER DEFAULT 0,
+          verification_token TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      // db.run("UPDATE users SET is_verified = 1 WHERE is_verified IS NULL OR is_verified = 0");
+      // db.run(`UPDATE users SET email = id || '@chcci.edu.ph' WHERE email IS NULL OR email = ''`);
+      const adminId = 'admin@chcci.edu.ph';
+      db.get("SELECT id FROM users WHERE id = ?", [adminId], (err, row) => {
+        if (!row) {
+          const hashedPassword = bcrypt.hashSync('Admin123!', 10);
+          db.run(
+            "INSERT INTO users (id, password, name, role, avatar) VALUES (?, ?, ?, ?, ?)",
+            [adminId, hashedPassword, 'System Admin', 'admin', 'https://ui-avatars.com/api/?name=Admin&background=000&color=fff']
+          );
+          console.log('Admin user seeded');
+        }
+      });
+
+      // Seed Initial Student (Red)
+      const studentId = '51762023';
+      db.get("SELECT id FROM users WHERE id = ?", [studentId], (err, row) => {
+        if (!row) {
+          const hashedPassword = bcrypt.hashSync('Password123!', 10);
+          db.run(
+            "INSERT INTO users (id, password, name, role, program, year, avg, balance, avatar) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [studentId, hashedPassword, 'Red', 'student', 'BSCS', '3rd Year', '1.50', 3000.00, 'https://ui-avatars.com/api/?name=Red&background=800000&color=fff']
+          );
+          console.log('Initial student seeded');
+        }
+      });
+
+      // Subjects table (Schedules and Grades)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS subjects (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          student_id TEXT NOT NULL,
+          code TEXT NOT NULL,
+          name TEXT NOT NULL,
+          grade TEXT DEFAULT '0.00',
+          units INTEGER NOT NULL,
+          time TEXT,
+          room TEXT,
+          instructor TEXT,
+          status TEXT DEFAULT 'Passed',
+          FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
+      resolve();
+    });
+  });
+};
+
+module.exports = { db, initDb };

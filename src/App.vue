@@ -1,0 +1,106 @@
+<script setup>
+import { ref, onMounted } from 'vue';
+import { usePortalStore } from './stores/portalStore';
+import { storeToRefs } from 'pinia';
+import Sidebar from './components/Sidebar.vue';
+import Navbar from './components/Navbar.vue';
+
+const store = usePortalStore();
+const { isAuthenticated } = storeToRefs(store);
+
+const isSidebarOpen = ref(false);
+
+const toggleSidebar = () => {
+  isSidebarOpen.value = !isSidebarOpen.value;
+};
+
+const closeSidebar = () => {
+  isSidebarOpen.value = false;
+};
+
+// Handle window resize for sidebar behavior
+onMounted(() => {
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 1024) {
+      isSidebarOpen.value = false;
+    }
+  });
+});
+</script>
+
+<template>
+  <div :class="['flex min-h-screen bg-[#f8fafc] font-sans text-gray-900 selection:bg-primary/20 selection:text-primary', !isAuthenticated ? 'w-full' : '']">
+    
+    <!-- Sidebar (Only if Authenticated and not Admin) -->
+    <Sidebar v-if="isAuthenticated && !store.isAdmin" :is-open="isSidebarOpen" @close="closeSidebar" />
+
+    <!-- Main Content Area -->
+    <div :class="['flex-1 flex flex-col min-w-0 h-screen overflow-hidden', !isAuthenticated ? 'w-full' : '']">
+      
+      <!-- Navbar (Only if Authenticated and not Admin) -->
+      <Navbar v-if="isAuthenticated && !store.isAdmin" @toggle-sidebar="toggleSidebar" />
+
+      <!-- Scrollable Content -->
+      <main :class="['flex-1 overflow-y-auto custom-scrollbar', isAuthenticated ? 'bg-gray-50/30' : 'bg-white']">
+        
+        <!-- Transition for Page Navigation -->
+        <router-view v-slot="{ Component }">
+          <transition 
+            name="page-fade" 
+            mode="out-in"
+          >
+            <component :is="Component" :key="$route.fullPath" />
+          </transition>
+        </router-view>
+        
+        <!-- Footer (Responsive Visibility) -->
+        <footer class="mt-auto px-8 py-6 border-t border-gray-100 bg-white/50 text-center">
+          <p class="text-xs text-gray-400 font-medium tracking-wide">
+            © 2026 CONCEPCION HOLY CROSS COLLEGE INC. (CHCCI) STUDENT PORTAL v2.5.0
+          </p>
+        </footer>
+      </main>
+
+    </div>
+  </div>
+</template>
+
+<style>
+/* Global Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* Page Transitions */
+.page-fade-enter-active, 
+.page-fade-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Hide spin buttons in number inputs */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+</style>
