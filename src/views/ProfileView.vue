@@ -8,9 +8,13 @@ const isEditing = ref(false);
 
 const profileForm = reactive({ ...store.user });
 
-const saveProfile = () => {
-  store.updateProfile(profileForm);
-  isEditing.value = false;
+const saveProfile = async () => {
+  const result = await store.updateProfile(profileForm);
+  if (result.success) {
+    isEditing.value = false;
+  } else {
+    alert(result.message);
+  }
 };
 </script>
 
@@ -118,9 +122,9 @@ const saveProfile = () => {
                   </span>
                   <input 
                     type="email"
-                    value="red.student@chcci.edu.ph"
-                    :disabled="!isEditing"
-                    class="w-full bg-gray-50/50 border border-gray-100 rounded-xl px-10 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
+                    v-model="profileForm.email"
+                    disabled
+                    class="w-full bg-gray-50 border border-gray-100 rounded-xl px-10 py-3 text-sm font-bold text-gray-700 opacity-60 cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -132,9 +136,10 @@ const saveProfile = () => {
                   </span>
                   <input 
                     type="tel"
-                    value="+63 912 345 6789"
+                    v-model="profileForm.phone"
+                    placeholder="+63 XXX XXX XXXX"
                     :disabled="!isEditing"
-                    class="w-full bg-gray-50/50 border border-gray-100 rounded-xl px-10 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
+                    class="w-full bg-gray-50/50 border border-gray-100 rounded-xl px-10 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all disabled:opacity-70"
                   />
                 </div>
               </div>
@@ -145,9 +150,10 @@ const saveProfile = () => {
                     <MapPin class="w-4 h-4" />
                   </span>
                   <input 
-                    value="123 Academic Way, Concepcion, Tarlac"
+                    v-model="profileForm.address"
+                    placeholder="Enter your residential address"
                     :disabled="!isEditing"
-                    class="w-full bg-gray-50/50 border border-gray-100 rounded-xl px-10 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all"
+                    class="w-full bg-gray-50/50 border border-gray-100 rounded-xl px-10 py-3 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all disabled:opacity-70"
                   />
                 </div>
               </div>

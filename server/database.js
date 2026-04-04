@@ -15,6 +15,8 @@ const initDb = () => {
           password TEXT NOT NULL,
           name TEXT NOT NULL,
           email TEXT UNIQUE,
+          phone TEXT,
+          address TEXT,
           role TEXT NOT NULL DEFAULT 'student',
           program TEXT,
           year TEXT,
@@ -50,7 +52,32 @@ const initDb = () => {
             [studentId, hashedPassword, 'Red', 'student', 'BSCS', '3rd Year', '1.50', 3000.00, 'https://ui-avatars.com/api/?name=Red&background=800000&color=fff']
           );
           console.log('Initial student seeded');
+          
+          // Seed Initial Subjects for Red
+          const subjects = [
+            ['CS301', 'Software Engineering', '1.25', 3, 'MW 09:00-10:30', 'Room 302', 'Dr. Santos', 'Passed'],
+            ['CS302', 'Web Development', '1.50', 3, 'TTH 01:00-02:30', 'Comp Lab 1', 'Engr. Reyes', 'Passed'],
+            ['CS303', 'Mobile Computing', '1.75', 3, 'Fri 08:00-11:00', 'Comp Lab 2', 'Ms. Garcia', 'Passed'],
+            ['CS304', 'Networking 1', '1.50', 3, 'Sat 09:00-12:00', 'Room 405', 'Mr. Lopez', 'Passed'],
+            ['GEN101', 'Ethics', '1.00', 3, 'MW 02:00-03:30', 'Room 201', 'Dr. Cruz', 'Passed']
+          ];
+          
+          subjects.forEach(s => {
+            db.run(
+              "INSERT INTO subjects (student_id, code, name, grade, units, time, room, instructor, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              [studentId, ...s]
+            );
+          });
+          console.log('Initial subjects seeded for Red');
         }
+      });
+
+      // Add phone and address columns if they don't exist (Backward Compatibility)
+      db.run("ALTER TABLE users ADD COLUMN phone TEXT", (err) => {
+        // Ignore error if column already exists
+      });
+      db.run("ALTER TABLE users ADD COLUMN address TEXT", (err) => {
+        // Ignore error if column already exists
       });
 
       // Subjects table (Schedules and Grades)
@@ -70,7 +97,48 @@ const initDb = () => {
         )
       `);
 
-      resolve();
+      // Posts table (Student Thoughts and Admin Announcements)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS posts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL,
+          content TEXT NOT NULL,
+          type TEXT NOT NULL DEFAULT 'post', -- 'post' or 'announcement'
+          image_url TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
+      // Comments table
+      db.run(`
+        CREATE TABLE IF NOT EXISTS comments (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          post_id INTEGER NOT NULL,
+          user_id TEXT NOT NULL,
+          content TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
+      // Reactions table (Likes)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS reactions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          post_id INTEGER NOT NULL,
+          user_id TEXT NOT NULL,
+          type TEXT NOT NULL DEFAULT 'like',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(post_id, user_id),
+          FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `, (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
     });
   });
 };

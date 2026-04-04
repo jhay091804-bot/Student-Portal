@@ -27,6 +27,7 @@ import {
   Files
 } from 'lucide-vue-next';
 import FloatingChatBot from '../components/FloatingChatBot.vue';
+import SpookyAuth from '../components/SpookyAuth.vue';
 
 const router = useRouter();
 const store = usePortalStore();
@@ -389,55 +390,19 @@ const stats = [
                  <button @click="toggleMode" class="w-full bg-[#002147] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200">Continue to Login</button>
               </div>
 
-              <!-- Login Form -->
-              <div v-else-if="authMode === 'login'" class="space-y-8 animate-in slide-in-from-right-4 duration-300">
-                <!-- Waving Figure Greeting -->
-                <div class="flex items-center gap-4 mb-4">
-                  <div class="w-16 h-16 relative">
-                    <svg viewBox="0 0 100 100" class="w-full h-full text-[#002147] fill-current">
-                       <circle cx="50" cy="35" r="15" />
-                       <path d="M35 55 Q50 50 65 55 L60 85 L40 85 Z" />
-                       <g class="animate-wave"><path d="M35 55 L20 40 L25 35 Z" /></g>
-                       <path d="M65 55 L80 70 L75 75 Z" />
-                    </svg>
-                    <div class="absolute -top-2 -right-4 animate-bounce bg-[#D4AF37] text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow">Hello!</div>
-                  </div>
-                  <div>
+                <!-- Spooky Interactive Login -->
+                <div v-else-if="authMode === 'login'" class="animate-in slide-in-from-right-4 duration-300">
+                  <div class="mb-6">
                     <h2 class="text-2xl font-black text-[#002147] tracking-tight m-0">Welcome Back</h2>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Portal Access Node</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Secure Portal Access</p>
                   </div>
-                </div>
-
-                <form @submit.prevent="handleLogin" class="space-y-5">
-                  <div v-if="loginError" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-[10px] font-bold uppercase text-center animate-in shake">{{ loginError }}</div>
                   
-                  <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Student ID</label>
-                    <div class="relative group">
-                      <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-[#002147]"><User :size="18" /></span>
-                      <input v-model="studentId" type="text" placeholder="2021-0042" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 pl-11 pr-4 focus:outline-none focus:border-[#002147] font-bold text-sm text-[#002147]" />
-                    </div>
+                  <SpookyAuth :onSuccess="() => showAuthModal = false" />
+
+                  <div class="pt-6 text-center">
+                    <button @click="toggleMode" class="text-[10px] font-black text-slate-400 hover:text-[#002147] uppercase tracking-widest transition-colors">New Student? Enroll Today</button>
                   </div>
-
-                  <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
-                    <div class="relative group">
-                      <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-[#002147]"><Lock :size="18" /></span>
-                      <input v-model="password" :type="showPassword ? 'text' : 'password'" @copy.prevent @paste.prevent @contextmenu.prevent placeholder="••••••••" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 pl-11 pr-11 focus:outline-none focus:border-[#002147] font-bold text-sm text-[#002147]" />
-                      <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400"><Eye v-if="!showPassword" :size="18" /><EyeOff v-else :size="18" /></button>
-                    </div>
-                  </div>
-
-                  <button type="submit" :disabled="isAuthenticating" class="w-full bg-[#002147] text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 flex items-center justify-center gap-2">
-                    <template v-if="!isAuthenticating">Sign In <ArrowRight :size="14"/></template>
-                    <template v-else><Loader2 class="animate-spin" :size="14"/> Authenticating</template>
-                  </button>
-                </form>
-
-                <div class="pt-4 text-center">
-                  <button @click="toggleMode" class="text-[10px] font-black text-slate-400 hover:text-[#002147] uppercase tracking-widest transition-colors">New Student? Enroll Today</button>
                 </div>
-              </div>
 
               <!-- Register Form -->
               <div v-else class="space-y-6 animate-in slide-in-from-left-4 duration-300">

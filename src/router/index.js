@@ -8,7 +8,7 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: () => import('../views/LoginView.vue'),
+      component: () => import('../views/SpookyLoginView.vue'),
       meta: { guest: true }
     },
     {
@@ -76,6 +76,12 @@ const router = createRouter({
       name: 'clearance',
       component: () => import('../views/ClearanceView.vue'),
       meta: { requiresAuth: true, role: 'student' }
+    },
+    {
+      path: '/wall',
+      name: 'wall',
+      component: () => import('../views/StudentWallView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 });

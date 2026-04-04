@@ -44,7 +44,7 @@ const filteredGrades = computed(() => {
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-primary p-6 rounded-3xl text-white shadow-xl shadow-primary/20 relative overflow-hidden group">
         <p class="text-xs uppercase font-bold text-white/60 tracking-widest">General Weighted Average</p>
-        <h2 class="text-4xl font-black mt-1">{{ store.user.avg }}</h2>
+        <h2 class="text-4xl font-black mt-1">{{ store.user?.avg || '0.00' }}</h2>
         <GraduationCap class="absolute -right-4 -bottom-4 w-20 h-20 opacity-10 group-hover:scale-110 transition-transform" />
       </div>
       <div class="bg-white p-6 rounded-3xl border border-gray-100 card-shadow">

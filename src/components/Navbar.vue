@@ -62,7 +62,7 @@ const markRead = () => {
         <input 
           type="text" 
           placeholder="Search for courses, grades, or events..." 
-          class="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+          :class="['w-full bg-gray-50 border border-gray-200 text-sm rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 transition-all', store.isAdmin ? 'focus:ring-primary/20 focus:border-primary' : 'focus:ring-[#002147]/20 focus:border-[#002147]']"
         />
       </div>
     </div>
@@ -89,15 +89,15 @@ const markRead = () => {
         >
           <div class="px-4 py-2 border-b border-gray-50 flex items-center justify-between">
             <h4 class="text-xs font-black text-gray-900 uppercase tracking-widest">Notifications</h4>
-            <button @click="markRead" class="text-[10px] font-bold text-primary hover:underline">Mark all as read</button>
+            <button @click="markRead" :class="['text-[10px] font-bold hover:underline', store.isAdmin ? 'text-primary' : 'text-[#002147]']">Mark all as read</button>
           </div>
           <div class="max-h-64 overflow-y-auto">
             <div 
               v-for="n in notifications" 
               :key="n.id" 
-              :class="['px-4 py-3 flex gap-3 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50 last:border-0', !n.read ? 'bg-primary/[0.02]' : '']"
+              :class="['px-4 py-3 flex gap-3 hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50 last:border-0', !n.read ? (store.isAdmin ? 'bg-primary/[0.02]' : 'bg-[#002147]/[0.02]') : '']"
             >
-              <div :class="['w-8 h-8 rounded-lg flex items-center justify-center shrink-0', n.read ? 'bg-gray-100 text-gray-400' : 'bg-primary/10 text-primary']">
+              <div :class="['w-8 h-8 rounded-lg flex items-center justify-center shrink-0', n.read ? 'bg-gray-100 text-gray-400' : (store.isAdmin ? 'bg-primary/10 text-primary' : 'bg-[#002147]/10 text-[#002147]')]">
                 <CheckCircle v-if="n.read" class="w-4 h-4" />
                 <AlertCircle v-else class="w-4 h-4" />
               </div>
@@ -127,9 +127,9 @@ const markRead = () => {
         >
           <div class="flex flex-col text-right mr-2 hidden sm:flex">
             <span class="text-sm font-semibold text-gray-800">{{ user.name }}</span>
-            <span class="text-[10px] font-medium text-gray-400">Student ID: {{ user.id }}</span>
+            <span class="text-[10px] font-medium text-gray-400">{{ store.isAdmin ? 'Admin' : 'Student' }} ID: {{ user.id }}</span>
           </div>
-          <div class="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden">
+          <div :class="['w-9 h-9 rounded-full flex items-center justify-center overflow-hidden border', store.isAdmin ? 'bg-primary/10 border-primary/20' : 'bg-[#002147]/10 border-[#002147]/20']">
             <img :src="user.avatar" alt="User" class="w-full h-full object-cover" />
           </div>
           <ChevronDown :class="['w-4 h-4 text-gray-400 transition-transform duration-200', isProfileOpen ? 'rotate-180' : '']" />
@@ -140,7 +140,7 @@ const markRead = () => {
           v-if="isProfileOpen" 
           class="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
         >
-          <router-link to="/profile" @click="isProfileOpen = false" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+          <router-link to="/profile" @click="isProfileOpen = false" :class="['w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors', store.isAdmin ? 'hover:text-primary' : 'hover:text-[#002147]']">
             <UserIcon class="w-4 h-4" />
             <span>Profile Settings</span>
           </router-link>
@@ -170,7 +170,7 @@ const markRead = () => {
       <input 
         type="text" 
         placeholder="Quick search..." 
-        class="w-full bg-gray-50 border border-gray-200 text-sm rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+        :class="['w-full bg-gray-50 border border-gray-200 text-sm rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 transition-all', store.isAdmin ? 'focus:ring-primary/20' : 'focus:ring-[#002147]/20']"
       />
     </div>
   </div>

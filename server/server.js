@@ -7,7 +7,42 @@ const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { db, initDb } = require('./database');
+const crypto = require('crypto');
+const { db: sqliteDb, initDb: initSqlite } = require('./database');
+const { pool, initDbPg } = require('./database_pg');
+
+// Database Switching Logic
+const usePg = !!process.env.DATABASE_URL;
+let db;
+
+if (usePg) {
+  console.log('🐘 PostgreSQL Mode Enabled');
+  db = {
+    get: (sql, params, cb) => {
+      let i = 1;
+      const pgSql = sql.replace(/\?/g, () => `$${i++}`);
+      pool.query(pgSql, params, (err, res) => cb(err, res ? res.rows[0] : null));
+    },
+    all: (sql, params, cb) => {
+      let i = 1;
+      const pgSql = sql.replace(/\?/g, () => `$${i++}`);
+      pool.query(pgSql, params, (err, res) => cb(err, res ? res.rows : []));
+    },
+    run: (sql, params, cb) => {
+      let i = 1;
+      const pgSql = sql.replace(/\?/g, () => `$${i++}`);
+      pool.query(pgSql, params, (err, res) => {
+        const result = { lastID: res?.rows[0]?.id, changes: res?.rowCount };
+        cb.call(result, err);
+      });
+    }
+  };
+} else {
+  console.log('📂 SQLite Mode Enabled');
+  db = sqliteDb;
+}
+
+const initDatabase = usePg ? initDbPg : initSqlite;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -50,7 +85,7 @@ const loginLimiter = rateLimit({
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array().map(err => ({ field: err.param, message: err.msg })) });
+    return res.status(400).json({ errors: errors.array().map(err => ({ field: err.path, message: err.msg })) });
   }
   next();
 };
@@ -85,7 +120,7 @@ app.post('/api/auth/login',
   (req, res) => {
     const { id, password } = req.body;
     
-    db.get("SELECT * FROM users WHERE id = ?", [id], (err, user) => {
+    db.get("SELECT * FROM users WHERE id = ? OR email = ?", [id, id], (err, user) => {
       if (err) return res.status(500).json({ error: 'Internal Server Error' });
       if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
@@ -122,7 +157,7 @@ app.post('/api/auth/register',
     const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=800000&color=fff`;
     
     // Generate Secure Verification Token
-    const verificationToken = require('crypto').randomBytes(32).toString('hex');
+    const verificationToken = crypto.randomBytes(32).toString('hex');
 
     db.run(
       "INSERT INTO users (id, password, name, email, role, program, year, avatar, is_verified, verification_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -270,6 +305,110 @@ app.delete('/api/admin/subjects/:id', authenticateToken, isAdmin, (req, res) => 
     if (err) return res.status(500).json({ error: 'Removal failed' });
     res.json({ message: 'Subject removed successfully' });
   });
+});// --- STUDENT WALL ENDPOINTS ---
+
+app.get('/api/wall/posts', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  const query = `
+    SELECT 
+      p.*, 
+      u.name as author_name, 
+      u.avatar as author_avatar, 
+      u.role as author_role,
+      (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as reaction_count,
+      (SELECT 1 FROM reactions r WHERE r.post_id = p.id AND r.user_id = ?) as user_reacted,
+      (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count
+    FROM posts p
+    JOIN users u ON p.user_id = u.id
+    ORDER BY p.type = 'announcement' DESC, p.created_at DESC
+  `;
+  
+  db.all(query, [userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch failed', details: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/wall/posts', 
+  authenticateToken, 
+  body('content').trim().notEmpty().escape(),
+  validate,
+  (req, res) => {
+    const { content, type, image_url } = req.body;
+    const userId = req.user.id;
+    const postType = (req.user.role === 'admin' && type === 'announcement') ? 'announcement' : 'post';
+
+    db.run(
+      "INSERT INTO posts (user_id, content, type, image_url) VALUES (?, ?, ?, ?)",
+      [userId, content, postType, image_url],
+      function(err) {
+        if (err) return res.status(500).json({ error: 'Post creation failed' });
+        
+        db.get(`
+          SELECT p.*, u.name as author_name, u.avatar as author_avatar, u.role as author_role, 0 as reaction_count, 0 as user_reacted, 0 as comment_count
+          FROM posts p JOIN users u ON p.user_id = u.id WHERE p.id = ?
+        `, [this.lastID], (err, row) => {
+          res.status(201).json(row);
+        });
+      }
+    );
+});
+
+app.post('/api/wall/posts/:id/react', authenticateToken, (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user.id;
+
+  db.get("SELECT id FROM reactions WHERE post_id = ? AND user_id = ?", [postId, userId], (err, row) => {
+    if (row) {
+      db.run("DELETE FROM reactions WHERE id = ?", [row.id], (err) => {
+        if (err) return res.status(500).json({ error: 'Reaction removal failed' });
+        res.json({ reacted: false });
+      });
+    } else {
+      db.run("INSERT INTO reactions (post_id, user_id) VALUES (?, ?)", [postId, userId], (err) => {
+        if (err) return res.status(500).json({ error: 'Reaction failed' });
+        res.json({ reacted: true });
+      });
+    }
+  });
+});
+
+app.get('/api/wall/posts/:id/comments', authenticateToken, (req, res) => {
+  const postId = req.params.id;
+  const query = `
+    SELECT c.*, u.name, u.avatar, u.role
+    FROM comments c JOIN users u ON c.user_id = u.id
+    WHERE c.post_id = ? ORDER BY c.created_at ASC
+  `;
+  db.all(query, [postId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch failed' });
+    res.json(rows);
+  });
+});
+
+app.post('/api/wall/posts/:id/comments', authenticateToken, body('content').trim().notEmpty().escape(), validate, (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user.id;
+  const { content } = req.body;
+  db.run("INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)", [postId, userId, content], function(err) {
+    if (err) return res.status(500).json({ error: 'Comment failed' });
+    db.get("SELECT c.*, u.name, u.avatar, u.role FROM comments c JOIN users u ON c.user_id = u.id WHERE c.id = ?", [this.lastID], (err, row) => {
+      res.status(201).json(row);
+    });
+  });
+});
+
+app.delete('/api/wall/posts/:id', authenticateToken, (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user.id;
+  db.get("SELECT user_id FROM posts WHERE id = ?", [postId], (err, post) => {
+    if (!post) return res.status(404).json({ error: 'Post not found' });
+    if (post.user_id !== userId && req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+    db.run("DELETE FROM posts WHERE id = ?", [postId],(err) => {
+      if (err) return res.status(500).json({ error: 'Deletion failed' });
+      res.json({ message: 'Post deleted' });
+    });
+  });
 });
 
 // --- STUDENT ENDPOINTS ---
@@ -284,25 +423,29 @@ app.get('/api/student/subjects', authenticateToken, (req, res) => {
 app.post('/api/student/payment', authenticateToken, (req, res) => {
   const { amount, method } = req.body;
   const student_id = req.user.id;
-
   if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid amount' });
-
-  // Update balance in users table
   db.run("UPDATE users SET balance = balance - ? WHERE id = ?", [amount, student_id], function(err) {
     if (err) return res.status(500).json({ error: 'Payment failed' });
-    
-    // Send back success and the new calculated balance (simple fetch)
     db.get("SELECT balance FROM users WHERE id = ?", [student_id], (err, row) => {
-      res.json({ 
-        message: `Payment of ₱${amount} via ${method} successful`,
-        newBalance: row.balance,
-        transaction: {
-          date: new Date().toISOString().split('T')[0],
-          description: `Online Payment (${method})`,
-          amount: amount,
-          type: 'Payment'
-        }
-      });
+      res.json({ message: 'Payment successful', newBalance: row.balance });
+    });
+  });
+});
+
+app.put('/api/student/profile', authenticateToken, (req, res) => {
+  const { name, phone, address, password } = req.body;
+  const student_id = req.user.id;
+  let query = "UPDATE users SET name = ?, phone = ?, address = ? WHERE id = ?";
+  let params = [name, phone, address, student_id];
+  if (password) {
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    query = "UPDATE users SET name = ?, phone = ?, address = ?, password = ? WHERE id = ?";
+    params = [name, phone, address, hashedPassword, student_id];
+  }
+  db.run(query, params, function(err) {
+    if (err) return res.status(400).json({ error: 'Update failed' });
+    db.get("SELECT id, name, email, phone, address, role, program, year, avatar FROM users WHERE id = ?", [student_id], (err, row) => {
+      res.json({ message: 'Profile updated', user: row });
     });
   });
 });
@@ -332,7 +475,7 @@ let adminSettings = {
   announcement: 'Reminder: Submission of clearance for the current semester is ongoing.'
 };
 
-app.get('/api/admin/settings', authenticateToken, isAdmin, (req, res) => {
+app.get('/api/admin/settings', authenticateToken, (req, res) => {
   res.json(adminSettings);
 });
 
@@ -424,9 +567,11 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-initDb().then(() => {
+initDatabase().then(() => {
   app.listen(PORT, () => {
-    console.log(`🚀 CHCCI Secure Gateway active on http://localhost:${PORT}`);
+    console.log(`🚀 CHCCI Secure Gateway active on port ${PORT}`);
+    if (usePg) console.log('✅ Connected to Cloud PostgreSQL');
+    else console.log('✅ Connected to Local SQLite');
   });
 }).catch(err => {
   console.error("❌ Critical Database Initialization Error:", err);

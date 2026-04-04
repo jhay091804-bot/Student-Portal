@@ -172,6 +172,23 @@ export const usePortalStore = defineStore('portal', {
         }));
         this.grades = subjectsWithDefaults;
         this.schedule = subjectsWithDefaults;
+        
+        // Dynamic GWA Calculation
+        if (subjectsWithDefaults.length > 0 && this.user) {
+          const totalUnits = subjectsWithDefaults.reduce((acc, s) => acc + (s.units || 0), 0);
+          const totalGradePoints = subjectsWithDefaults.reduce((acc, s) => {
+            const grade = parseFloat(s.grade) || 0;
+            return acc + (grade * (s.units || 0));
+          }, 0);
+          
+          if (totalUnits > 0) {
+            const calculatedGwa = (totalGradePoints / totalUnits).toFixed(2);
+            this.user.avg = calculatedGwa;
+            // Also sync to localStorage
+            localStorage.setItem('chcci_active_user', JSON.stringify(this.user));
+          }
+        }
+        
         return subjectsWithDefaults;
       } catch (error) {
         console.error('Fetch my subjects failed:', error);
@@ -253,8 +270,76 @@ export const usePortalStore = defineStore('portal', {
         return false;
       }
     },
+    async updateProfile(profileData) {
+      try {
+        const response = await api.put('/student/profile', profileData);
+        this.user = response.data.user;
+        localStorage.setItem('chcci_active_user', JSON.stringify(this.user));
+        return { success: true, message: response.data.message };
+      } catch (error) {
+        console.error('Update profile failed:', error);
+        const message = error.response?.data?.error || 'Failed to update profile';
+        return { success: false, message };
+      }
+    },
     markNotificationsRead() {
       this.notifications.forEach(n => n.read = true);
+    },
+
+    // --- STUDENT WALL ACTIONS ---
+    async fetchWallPosts() {
+      try {
+        const response = await api.get('/wall/posts');
+        return response.data;
+      } catch (error) {
+        console.error('Fetch wall posts failed:', error);
+        return [];
+      }
+    },
+    async createWallPost(content, type = 'post', image_url = null) {
+      try {
+        const response = await api.post('/wall/posts', { content, type, image_url });
+        return response.data;
+      } catch (error) {
+        console.error('Create wall post failed:', error);
+        return null;
+      }
+    },
+    async togglePostReaction(postId) {
+      try {
+        const response = await api.post(`/wall/posts/${postId}/react`);
+        return response.data;
+      } catch (error) {
+        console.error('Toggle reaction failed:', error);
+        return null;
+      }
+    },
+    async fetchPostComments(postId) {
+      try {
+        const response = await api.get(`/wall/posts/${postId}/comments`);
+        return response.data;
+      } catch (error) {
+        console.error('Fetch comments failed:', error);
+        return [];
+      }
+    },
+    async addPostComment(postId, content) {
+      try {
+        const response = await api.post(`/wall/posts/${postId}/comments`, { content });
+        return response.data;
+      } catch (error) {
+        console.error('Add comment failed:', error);
+        return null;
+      }
+    },
+    async deleteWallPost(postId) {
+      try {
+        await api.delete(`/wall/posts/${postId}`);
+        return true;
+      } catch (error) {
+        console.error('Delete post failed:', error);
+        return false;
+      }
     }
   }
 });

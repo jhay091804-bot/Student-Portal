@@ -29,16 +29,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <div :class="['flex min-h-screen bg-[#f8fafc] font-sans text-gray-900 selection:bg-primary/20 selection:text-primary', !isAuthenticated ? 'w-full' : '']">
+  <div :class="['flex min-h-screen bg-[#f8fafc] font-sans text-gray-900', !isAuthenticated ? 'w-full' : '', store.isAdmin ? 'selection:bg-primary/20 selection:text-primary' : 'selection:bg-[#002147]/20 selection:text-[#002147]']">
     
-    <!-- Sidebar (Only if Authenticated and not Admin) -->
-    <Sidebar v-if="isAuthenticated && !store.isAdmin" :is-open="isSidebarOpen" @close="closeSidebar" />
+    <!-- Sidebar (Only if Authenticated) -->
+    <Sidebar v-if="isAuthenticated" :is-open="isSidebarOpen" @close="closeSidebar" />
 
     <!-- Main Content Area -->
     <div :class="['flex-1 flex flex-col min-w-0 h-screen overflow-hidden', !isAuthenticated ? 'w-full' : '']">
       
-      <!-- Navbar (Only if Authenticated and not Admin) -->
-      <Navbar v-if="isAuthenticated && !store.isAdmin" @toggle-sidebar="toggleSidebar" />
+      <!-- Navbar (Only if Authenticated) -->
+      <Navbar v-if="isAuthenticated" @toggle-sidebar="toggleSidebar" />
 
       <!-- Scrollable Content -->
       <main :class="['flex-1 overflow-y-auto custom-scrollbar', isAuthenticated ? 'bg-gray-50/30' : 'bg-white']">
@@ -56,7 +56,7 @@ onMounted(() => {
         <!-- Footer (Responsive Visibility) -->
         <footer class="mt-auto px-8 py-6 border-t border-gray-100 bg-white/50 text-center">
           <p class="text-xs text-gray-400 font-medium tracking-wide">
-            © 2026 CONCEPCION HOLY CROSS COLLEGE INC. (CHCCI) STUDENT PORTAL v2.5.0
+            © 2026 CONCEPCION HOLY CROSS COLLEGE INC. (CHCCI) {{ store.isAdmin ? 'ADMIN' : 'STUDENT' }} PORTAL v2.5.0
           </p>
         </footer>
       </main>

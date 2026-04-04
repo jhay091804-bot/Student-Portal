@@ -11,7 +11,8 @@ import {
   Files, 
   Settings, 
   LogOut,
-  X
+  X,
+  Users
 } from 'lucide-vue-next';
 
 import { usePortalStore } from '../stores/portalStore';
@@ -25,43 +26,75 @@ const emit = defineEmits(['close']);
 const store = usePortalStore();
 const router = useRouter();
 
-const menuItems = [
-  {
-    category: 'MAIN MENU',
-    items: [
-      { name: 'Dashboard', icon: LayoutDashboard, route: 'dashboard' },
-    ]
-  },
-  {
-    category: 'ACADEMICS',
-    items: [
-      { name: 'My Profile', icon: User, route: 'profile' },
-      { name: 'My Grades', icon: GraduationCap, route: 'grades' },
-      { name: 'Class Schedule', icon: Calendar, route: 'schedule' },
-      { name: 'Prospectus', icon: FileText, route: 'prospectus' },
-    ]
-  },
-  {
-    category: 'FINANCE',
-    items: [
-      { name: 'Statement of Account', icon: Wallet, route: 'finance' },
-      { name: 'Payment History', icon: History, route: 'finance' },
-    ]
-  },
-  {
-    category: 'SERVICES',
-    items: [
-      { name: 'E-Clearance', icon: CheckSquare, route: 'clearance' },
-      { name: 'Request Documents', icon: Files, route: 'prospectus' },
-    ]
-  },
-  {
-    category: 'BOTTOM',
-    items: [
-      { name: 'Settings', icon: Settings, route: 'profile' },
-      { name: 'Logout', icon: LogOut, color: 'text-red-500 hover:text-red-600', action: 'logout' },
-    ]
+import { computed } from 'vue';
+
+const menuItems = computed(() => {
+  const common = [
+    {
+      category: 'COMMUNITY',
+      items: [
+        { name: 'Student Wall', icon: Users, route: 'wall' },
+      ]
+    }
+  ];
+
+  if (store.isAdmin) {
+    return [
+      {
+        category: 'ADMINISTRATION',
+        items: [
+          { name: 'Dashboard', icon: LayoutDashboard, route: 'admin', query: { view: 'dashboard' } },
+          { name: 'Student Records', icon: Users, route: 'admin', query: { view: 'students' } },
+        ]
+      },
+      ...common,
+      {
+        category: 'SYSTEM',
+        items: [
+          { name: 'Analytics', icon: GraduationCap, route: 'admin', query: { view: 'analytics' } },
+          { name: 'Security Settings', icon: Settings, route: 'admin', query: { view: 'settings' } },
+        ]
+      }
+    ];
   }
+
+  return [
+    {
+      category: 'MAIN MENU',
+      items: [
+        { name: 'Dashboard', icon: LayoutDashboard, route: 'dashboard' },
+      ]
+    },
+    ...common,
+    {
+      category: 'ACADEMICS',
+      items: [
+        { name: 'My Profile', icon: User, route: 'profile' },
+        { name: 'My Grades', icon: GraduationCap, route: 'grades' },
+        { name: 'Class Schedule', icon: Calendar, route: 'schedule' },
+        { name: 'Prospectus', icon: FileText, route: 'prospectus' },
+      ]
+    },
+    {
+      category: 'FINANCE',
+      items: [
+        { name: 'Statement of Account', icon: Wallet, route: 'finance' },
+        { name: 'Payment History', icon: History, route: 'finance' },
+      ]
+    },
+    {
+      category: 'SERVICES',
+      items: [
+        { name: 'E-Clearance', icon: CheckSquare, route: 'clearance' },
+        { name: 'Request Documents', icon: Files, route: 'prospectus' },
+      ]
+    }
+  ];
+});
+
+const bottomItems = [
+  { name: 'Settings', icon: Settings, route: 'profile' },
+  { name: 'Logout', icon: LogOut, color: 'text-red-500 hover:text-red-600', action: 'logout' },
 ];
 
 const handleAction = (item) => {
@@ -84,10 +117,10 @@ const handleAction = (item) => {
       <!-- Sidebar Header -->
       <div class="h-16 flex items-center justify-between px-6 border-b border-gray-100">
         <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <div :class="['w-8 h-8 rounded-lg flex items-center justify-center', store.isAdmin ? 'bg-primary' : 'bg-[#002147]']">
             <span class="text-white font-bold text-lg">C</span>
           </div>
-          <span class="font-bold text-sm text-gray-800 leading-tight">CHCCI<br/>Student Portal</span>
+          <span class="font-bold text-sm text-gray-800 leading-tight">CHCCI<br/>{{ store.isAdmin ? 'Admin' : 'Student' }} Portal</span>
         </div>
         <button @click="emit('close')" class="lg:hidden p-1 rounded-md text-gray-500 hover:bg-gray-100">
           <X class="w-5 h-5" />
@@ -97,14 +130,14 @@ const handleAction = (item) => {
       <!-- Navigation Menu -->
       <nav class="flex-1 overflow-y-auto py-6 px-4 custom-scrollbar">
         <div v-for="section in menuItems" :key="section.category" class="mb-8">
-          <h3 v-if="section.category !== 'BOTTOM'" class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">
+          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">
             {{ section.category }}
           </h3>
           <div class="space-y-1">
             <template v-for="item in section.items" :key="item.name">
               <router-link 
                 v-if="!item.action"
-                :to="{ name: item.route }"
+                :to="{ name: item.route, query: item.query }"
                 v-slot="{ isActive }"
                 class="block"
               >
@@ -112,8 +145,8 @@ const handleAction = (item) => {
                   :class="[
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group',
                     isActive 
-                      ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-                      : item.color || 'text-gray-600 hover:bg-gray-50 hover:text-primary'
+                      ? (store.isAdmin ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-[#002147] text-white shadow-lg shadow-[#002147]/20') 
+                      : item.color || (store.isAdmin ? 'text-gray-600 hover:bg-gray-50 hover:text-primary' : 'text-gray-600 hover:bg-gray-50 hover:text-[#002147]')
                   ]"
                 >
                   <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
@@ -125,7 +158,43 @@ const handleAction = (item) => {
                 @click="handleAction(item)"
                 :class="[
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group',
-                  item.color || 'text-gray-600 hover:bg-gray-50 hover:text-primary'
+                  item.color || (store.isAdmin ? 'text-gray-600 hover:bg-gray-50 hover:text-primary' : 'text-gray-600 hover:bg-gray-50 hover:text-[#002147]')
+                ]"
+              >
+                <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
+                <span>{{ item.name }}</span>
+              </button>
+            </template>
+          </div>
+        </div>
+
+        <div class="mt-8 border-t border-gray-100 pt-8 mb-8">
+          <div class="space-y-1">
+            <template v-for="item in bottomItems" :key="item.name">
+              <router-link 
+                v-if="!item.action"
+                :to="{ name: item.route, query: item.query }"
+                v-slot="{ isActive }"
+                class="block"
+              >
+                <button 
+                  :class="[
+                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group',
+                    isActive 
+                      ? (store.isAdmin ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-[#002147] text-white shadow-lg shadow-[#002147]/20') 
+                      : item.color || (store.isAdmin ? 'text-gray-600 hover:bg-gray-50 hover:text-primary' : 'text-gray-600 hover:bg-gray-50 hover:text-[#002147]')
+                  ]"
+                >
+                  <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
+                  <span>{{ item.name }}</span>
+                </button>
+              </router-link>
+              <button 
+                v-else
+                @click="handleAction(item)"
+                :class="[
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group',
+                  item.color || (store.isAdmin ? 'text-gray-600 hover:bg-gray-50 hover:text-primary' : 'text-gray-600 hover:bg-gray-50 hover:text-[#002147]')
                 ]"
               >
                 <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
