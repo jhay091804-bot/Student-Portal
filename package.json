@@ -9,7 +9,6 @@
     "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
     "build": "vite build",
     "start": "node server/server.js",
-    "postinstall": "cd server && npm install",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -23,7 +22,18 @@
     "concurrently": "^9.2.1",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.19",
-    "vite": "^8.0.1"
+    "vite": "^8.0.1",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.3.2",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^8.0.4",
+    "pg": "^8.20.0",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
   }
