@@ -16,6 +16,7 @@ import {
 } from 'lucide-vue-next';
 import { usePortalStore } from '../stores/portalStore';
 import PostCard from '../components/PostCard.vue';
+import SkeletonLoader from '../components/SkeletonLoader.vue';
 
 const store = usePortalStore();
 const posts = ref([]);
@@ -205,10 +206,22 @@ const recentThoughts = computed(() => posts.value.filter(p => p.type === 'post')
           </div>
         </div>
 
-        <!-- Feed List -->
-        <div v-if="isLoading" class="flex flex-col items-center justify-center py-20 space-y-4">
-           <Loader2 class="w-12 h-12 text-[#002147] animate-spin opacity-20" />
-           <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gathering the latest campus vibes...</p>
+        <!-- Feed List Skeleton -->
+        <div v-if="isLoading" class="space-y-6">
+           <div v-for="i in 3" :key="i" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 space-y-4">
+              <div class="flex items-center gap-4">
+                <SkeletonLoader :is-loading="true" type="circle" class="w-10 h-10" />
+                <div class="space-y-2">
+                  <SkeletonLoader :is-loading="true" type="text" class="w-32 h-3" />
+                  <SkeletonLoader :is-loading="true" type="text" class="w-24 h-2" />
+                </div>
+              </div>
+              <SkeletonLoader :is-loading="true" type="rect" class="w-full h-20 rounded-xl" />
+              <div class="flex gap-4 pt-2">
+                <SkeletonLoader :is-loading="true" type="rect" class="w-16 h-8 rounded-lg" />
+                <SkeletonLoader :is-loading="true" type="rect" class="w-16 h-8 rounded-lg" />
+              </div>
+           </div>
         </div>
         
         <div v-else-if="posts.length > 0" class="space-y-6">

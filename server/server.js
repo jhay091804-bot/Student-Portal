@@ -40,6 +40,11 @@ if (usePg) {
 } else {
   console.log('📂 SQLite Mode Enabled');
   db = sqliteDb;
+  // Enable Foreign Key Support for Deletion Cascades
+  db.run("PRAGMA foreign_keys = ON", (err) => {
+    if (err) console.error('❌ Failed to enable PRAGMA foreign_keys:', err.message);
+    else console.log('✅ SQLite PRAGMA foreign_keys = ON');
+  });
 }
 
 const initDatabase = usePg ? initDbPg : initSqlite;
@@ -61,6 +66,12 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Healthcheck endpoint for Railway
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date() });
+});
+
 // Serve Static Frontend (ONLY in Production)
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../dist')));
@@ -68,17 +79,18 @@ if (process.env.NODE_ENV === 'production') {
 
 // Rate Limiting - Prevent DDoS/Brute Force
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 2 * 60 * 1000, // 2 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: { error: 'Too many requests from this IP, please try again after 15 minutes.' }
+  message: { error: 'Too many requests from this IP, please try again after 2 minutes.' }
 });
 app.use('/api/', globalLimiter);
 
 // Specific limiter for login
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  max: 5, // 5 attempts per 15 mins
-  message: { error: 'Too many login attempts. Account temporarily locked for 15 minutes.' }
+  windowMs: 2 * 60 * 1000, 
+  max: 5, // 5 attempts per 2 mins
+  skip: (req) => req.body && req.body.id === 'admin@chcci.edu.ph',
+  message: { error: 'Too many login attempts. Account temporarily locked for 2 minutes.' }
 });
 
 // Middleware to handle validation errors
@@ -264,8 +276,14 @@ app.put('/api/admin/students/:id', authenticateToken, isAdmin, (req, res) => {
 
 app.delete('/api/admin/students/:id', authenticateToken, isAdmin, (req, res) => {
   db.run("DELETE FROM users WHERE id = ? AND role = 'student'", [req.params.id], function(err) {
-    if (err) return res.status(500).json({ error: 'Deletion failed' });
-    res.json({ message: 'Student deleted successfully' });
+    if (err) {
+      console.error('Delete Failure:', err.message);
+      return res.status(500).json({ error: 'Deletion failed due to a database constraint.' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Student not found or already deleted.' });
+    }
+    res.json({ message: 'Student and all related records deleted successfully' });
   });
 });
 
@@ -273,29 +291,56 @@ app.delete('/api/admin/students/:id', authenticateToken, isAdmin, (req, res) => 
 
 app.get('/api/admin/students/:id/subjects', authenticateToken, isAdmin, (req, res) => {
   db.all("SELECT * FROM subjects WHERE student_id = ?", [req.params.id], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Fetch failed' });
+    if (err) return res.status(500).json({ error: 'Fetch subjects failed' });
     res.json(rows);
   });
 });
 
 app.post('/api/admin/students/:id/subjects', authenticateToken, isAdmin, (req, res) => {
-  const { code, name, grade, units, time, room, instructor, status } = req.body;
+  const { code, name, grade, units, time, room, days, instructor, status } = req.body;
   const student_id = req.params.id;
+
+  console.log('[DEBUG] POST Subject Body:', req.body);
 
   if (!student_id || !code || !name) {
     console.error('Subject Add failed: Missing required fields', { student_id, code, name });
     return res.status(400).json({ error: 'Missing required subject data' });
   }
 
+  const finalDays = (days && days.trim() !== '' && days !== 'TBA') ? days : 'TBA';
+  console.log(`[DEBUG] Final Days for INSERT: "${finalDays}"`);
+
   db.run(
-    "INSERT INTO subjects (student_id, code, name, grade, units, time, room, instructor, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [student_id, code, name, grade || '0.00', units || 3, time || 'TBA', room || 'TBA', instructor || 'TBA', status || 'Passed'],
+    "INSERT INTO subjects (student_id, code, name, grade, units, time, room, instructor, status, days) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [student_id, code, name, grade || '0.00', units || 3, time || 'TBA', room || 'TBA', instructor || 'TBA', status || 'Passed', finalDays],
     function(err) {
       if (err) {
         console.error('Database Error during Subject Add:', err.message);
         return res.status(400).json({ error: 'Could not add subject' });
       }
-      res.status(201).json({ id: this.lastID, student_id, code, name, grade, units, time, room, instructor, status });
+      res.status(201).json({ id: this.lastID, student_id, code, name, grade, units, time, room, instructor, status, days: finalDays });
+    }
+  );
+});
+
+app.put('/api/admin/subjects/:id', authenticateToken, isAdmin, (req, res) => {
+  const { code, name, grade, units, time, room, days, instructor, status } = req.body;
+  const id = req.params.id;
+
+  console.log('[DEBUG] PUT Subject Body:', req.body);
+
+  const finalDays = (days && days.trim() !== '' && days !== 'TBA') ? days : 'TBA';
+  console.log(`[DEBUG] Final Days for UPDATE: "${finalDays}"`);
+
+  db.run(
+    "UPDATE subjects SET code = ?, name = ?, grade = ?, units = ?, time = ?, room = ?, instructor = ?, status = ?, days = ? WHERE id = ?",
+    [code, name, grade, units, time, room, instructor, status, finalDays, id],
+    function(err) {
+      if (err) {
+        console.error('Database Error during Subject Update:', err.message);
+        return res.status(400).json({ error: 'Could not update subject' });
+      }
+      res.json({ message: 'Subject updated successfully', days: finalDays });
     }
   );
 });
@@ -411,6 +456,121 @@ app.delete('/api/wall/posts/:id', authenticateToken, (req, res) => {
   });
 });
 
+const ADMIN_ID = 'admin@chcci.edu.ph';
+
+// Get available students to chat with (excluding current user)
+app.get('/api/chat/contacts', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  db.all("SELECT id, name, avatar, program, year FROM users WHERE id != ? AND role = 'student' ORDER BY name ASC", [userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch contacts failed' });
+    res.json(rows);
+  });
+});
+
+// Student: Get messages with a specific person (admin or student)
+app.get('/api/chat/messages/:otherId', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  const otherId = req.params.otherId;
+  const query = `
+    SELECT * FROM messages 
+    WHERE (sender_id = ? AND receiver_id = ?) 
+       OR (sender_id = ? AND receiver_id = ?)
+    ORDER BY created_at ASC
+  `;
+  db.all(query, [userId, otherId, otherId, userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch messages failed' });
+    res.json(rows);
+  });
+});
+
+// Student: Get all my recent conversations (history)
+app.get('/api/chat/conversations', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  const query = `
+    SELECT DISTINCT u.id, u.name, u.avatar, u.program, u.year,
+      (SELECT content FROM messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
+      (SELECT created_at FROM messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_at,
+      (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
+    FROM users u
+    JOIN messages m ON (u.id = m.sender_id OR u.id = m.receiver_id)
+    WHERE u.id != ?
+    AND (m.sender_id = ? OR m.receiver_id = ?)
+    ORDER BY last_message_at DESC
+  `;
+  db.all(query, [userId, userId, userId, userId, userId, userId, userId, userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch conversations failed' });
+    res.json(rows);
+  });
+});
+
+// Student: Send message to anyone
+app.post('/api/chat/messages', authenticateToken, body('content').trim().notEmpty().escape(), validate, (req, res) => {
+  const senderId = req.user.id;
+  const { content, receiver_id } = req.body;
+  const recipient = receiver_id || ADMIN_ID; // Support legacy / admin as default
+  
+  db.run(
+    "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
+    [senderId, recipient, content],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Message send failed' });
+      res.status(201).json({ sender_id: senderId, receiver_id: recipient, content, created_at: new Date() });
+    }
+  );
+});
+
+// Admin: Get list of students who have messaged
+app.get('/api/admin/chat/conversations', authenticateToken, isAdmin, (req, res) => {
+  const query = `
+    SELECT DISTINCT u.id, u.name, u.avatar, u.program, u.year,
+      (SELECT content FROM messages WHERE (sender_id = u.id OR receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
+      (SELECT created_at FROM messages WHERE (sender_id = u.id OR receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_at,
+      (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
+    FROM users u
+    JOIN messages m ON (u.id = m.sender_id OR u.id = m.receiver_id)
+    WHERE u.role = 'student'
+    ORDER BY last_message_at DESC
+  `;
+  db.all(query, [ADMIN_ID], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch conversations failed' });
+    res.json(rows);
+  });
+});
+
+// Admin: Get messages for a specific student
+app.get('/api/admin/chat/messages/:studentId', authenticateToken, isAdmin, (req, res) => {
+  const studentId = req.params.studentId;
+  const query = `
+    SELECT * FROM messages 
+    WHERE (sender_id = ? AND receiver_id = ?) 
+       OR (sender_id = ? AND receiver_id = ?)
+    ORDER BY created_at ASC
+  `;
+  
+  // Mark as read when admin opens the chat
+  db.run("UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ?", [studentId, ADMIN_ID], () => {});
+
+  db.all(query, [studentId, ADMIN_ID, ADMIN_ID, studentId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch messages failed' });
+    res.json(rows);
+  });
+});
+
+// Admin: Send message to a student
+app.post('/api/admin/chat/messages/:studentId', authenticateToken, isAdmin, body('content').trim().notEmpty().escape(), validate, (req, res) => {
+  const studentId = req.params.studentId;
+  const { content } = req.body;
+
+  db.run(
+    "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
+    [ADMIN_ID, studentId, content],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Message send failed' });
+      res.status(201).json({ sender_id: ADMIN_ID, receiver_id: studentId, content, created_at: new Date() });
+    }
+  );
+});
+
 // --- STUDENT ENDPOINTS ---
 
 app.get('/api/student/subjects', authenticateToken, (req, res) => {
@@ -507,7 +667,7 @@ const KNOWLEDGE_BASE = {
     responses: [
       "Forgotten your password? Please contact the CHCCI IT Support desk or the Registrar's office to securely reset your credentials.",
       "Your Student ID (e.g., 5176-XXXX) is your permanent key to the portal. If you've lost it, we can help you retrieve it through the Registrar's department.",
-      "Our portal follows strict security standards. If you're blocked, wait 15 minutes for the rate-limiter to reset, or contact support for a manual unlock."
+      "Our portal follows strict security standards. If you're blocked, wait 2 minutes for the rate-limiter to reset, or contact support for a manual unlock."
     ]
   },
   institutional: {

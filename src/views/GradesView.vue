@@ -2,12 +2,17 @@
 import { GraduationCap, ArrowLeft, Search, Filter, Download } from 'lucide-vue-next';
 import { usePortalStore } from '../stores/portalStore';
 import { ref, computed, onMounted } from 'vue';
+import SkeletonLoader from '../components/SkeletonLoader.vue';
 
 const store = usePortalStore();
 const searchQuery = ref('');
 
-onMounted(() => {
-  store.fetchMySubjects();
+const isLoading = ref(true);
+
+onMounted(async () => {
+  isLoading.value = true;
+  await store.fetchMySubjects();
+  isLoading.value = false;
 });
 
 const filteredGrades = computed(() => {
@@ -44,12 +49,20 @@ const filteredGrades = computed(() => {
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-primary p-6 rounded-3xl text-white shadow-xl shadow-primary/20 relative overflow-hidden group">
         <p class="text-xs uppercase font-bold text-white/60 tracking-widest">General Weighted Average</p>
-        <h2 class="text-4xl font-black mt-1">{{ store.user?.avg || '0.00' }}</h2>
+        <h2 class="text-4xl font-black mt-1">
+          <SkeletonLoader :is-loading="isLoading" type="text" class="w-20 h-10 rounded-lg inline-block">
+            {{ store.user?.avg || '0.00' }}
+          </SkeletonLoader>
+        </h2>
         <GraduationCap class="absolute -right-4 -bottom-4 w-20 h-20 opacity-10 group-hover:scale-110 transition-transform" />
       </div>
       <div class="bg-white p-6 rounded-3xl border border-gray-100 card-shadow">
         <p class="text-xs uppercase font-bold text-gray-400 tracking-widest">Total Units</p>
-        <h2 class="text-4xl font-black text-gray-800 mt-1">{{ store.totalUnits }}</h2>
+        <h2 class="text-4xl font-black text-gray-800 mt-1">
+          <SkeletonLoader :is-loading="isLoading" type="text" class="w-16 h-10 rounded-lg inline-block">
+            {{ store.totalUnits }}
+          </SkeletonLoader>
+        </h2>
       </div>
       <div class="bg-white p-6 rounded-3xl border border-gray-100 card-shadow">
         <p class="text-xs uppercase font-bold text-gray-400 tracking-widest">Subjects Taken</p>
@@ -92,25 +105,34 @@ const filteredGrades = computed(() => {
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="grade in filteredGrades" :key="grade.code" class="hover:bg-gray-50/80 transition-colors group">
-              <td class="px-6 py-4 font-bold text-primary text-sm">{{ grade.code }}</td>
-              <td class="px-6 py-4 text-sm font-medium text-gray-700">{{ grade.name }}</td>
-              <td class="px-6 py-4 text-sm text-gray-500">{{ grade.units }}</td>
-              <td class="px-6 py-4 text-center">
-                <span class="inline-block px-3 py-1 bg-primary/5 text-primary rounded-lg font-bold text-sm">
-                  {{ grade.grade }}
-                </span>
-              </td>
-              <td class="px-6 py-4 text-center">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-50 text-green-600 border border-green-100">
-                  <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                  {{ grade.status }}
-                </span>
-              </td>
-            </tr>
-            <tr v-if="filteredGrades.length === 0">
-              <td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">No matching subjects found.</td>
-            </tr>
+            <template v-if="isLoading">
+              <tr v-for="i in 5" :key="i">
+                <td v-for="j in 5" :key="j" class="px-6 py-4">
+                  <SkeletonLoader :is-loading="true" type="text" class="w-full h-4 rounded" />
+                </td>
+              </tr>
+            </template>
+            <template v-else>
+              <tr v-for="grade in filteredGrades" :key="grade.code" class="hover:bg-gray-50/80 transition-colors group">
+                <td class="px-6 py-4 font-bold text-primary text-sm">{{ grade.code }}</td>
+                <td class="px-6 py-4 text-sm font-medium text-gray-700">{{ grade.name }}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">{{ grade.units }}</td>
+                <td class="px-6 py-4 text-center">
+                  <span class="inline-block px-3 py-1 bg-primary/5 text-primary rounded-lg font-bold text-sm">
+                    {{ grade.grade }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-50 text-green-600 border border-green-100">
+                    <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                    {{ grade.status }}
+                  </span>
+                </td>
+              </tr>
+              <tr v-if="filteredGrades.length === 0">
+                <td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">No matching subjects found.</td>
+              </tr>
+            </template>
           </tbody>
         </table>
       </div>

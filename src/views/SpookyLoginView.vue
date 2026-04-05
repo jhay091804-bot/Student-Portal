@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { usePortalStore } from '../stores/portalStore';
 import { useRouter } from 'vue-router';
 import { Lock, User, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck, Ghost as GhostIcon } from 'lucide-vue-next';
+import AnimatedPadlock from '../components/AnimatedPadlock.vue';
 
 const store = usePortalStore();
 const router = useRouter();
@@ -214,7 +215,7 @@ const mouthPath = computed(() => {
                   <ArrowRight class="w-5 h-5" />
                 </template>
                 <template v-else>
-                  <Loader2 class="w-5 h-5 animate-spin" />
+                  <AnimatedPadlock :status="store.authLoading ? 'loading' : (loginStatus === 'success' ? 'success' : 'idle')" :size="20" class="text-white" />
                   Authenticating...
                 </template>
               </button>

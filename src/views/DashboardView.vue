@@ -15,16 +15,21 @@ import { usePortalStore } from '../stores/portalStore';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { onMounted, ref } from 'vue';
+import SkeletonLoader from '../components/SkeletonLoader.vue';
 
 const store = usePortalStore();
 const { user, schedule } = storeToRefs(store);
 const router = useRouter();
 const settings = ref({ announcement: 'Welcome to the CHCCI Student Portal!' });
 
+const isLoading = ref(true);
+
 onMounted(async () => {
+  isLoading.value = true;
   await store.fetchMySubjects();
   const res = await store.fetchSettings();
   if (res) settings.value = res;
+  isLoading.value = false;
 });
 
 const navigateTo = (routeName) => {
@@ -38,11 +43,15 @@ const navigateTo = (routeName) => {
     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-          Welcome back, <span class="text-primary italic">{{ user.name }}!</span>
+          <SkeletonLoader :is-loading="isLoading" type="text" class="w-48 h-8 rounded-lg">
+            Welcome back, <span class="text-primary italic">{{ user.name }}!</span>
+          </SkeletonLoader>
         </h1>
         <p class="text-gray-500 mt-1 flex items-center gap-2">
           <BookOpen class="w-4 h-4 text-primary" />
-          {{ user.program }} - {{ user.year }} (A.Y. 2026-2027)
+          <SkeletonLoader :is-loading="isLoading" type="text" class="w-32 h-4 rounded-md">
+            {{ user.program }} - {{ user.year }} (A.Y. 2026-2027)
+          </SkeletonLoader>
         </p>
       </div>
       <div class="bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
@@ -74,7 +83,13 @@ const navigateTo = (routeName) => {
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <template v-if="isLoading">
+            <div v-for="i in 2" :key="i" class="bg-white p-5 rounded-3xl border border-gray-100 card-shadow h-44">
+              <SkeletonLoader :is-loading="true" type="rect" />
+            </div>
+          </template>
           <article 
+            v-else
             v-for="(classItem, index) in schedule" 
             :key="index"
             class="group bg-white p-5 rounded-3xl border border-gray-100 card-shadow hover:scale-[1.02] transition-all duration-300 relative overflow-hidden"
@@ -122,7 +137,9 @@ const navigateTo = (routeName) => {
           <div class="flex flex-col gap-1 relative z-10">
             <p class="text-xs uppercase font-bold text-gray-500 tracking-widest">Academic Standing</p>
             <h3 class="text-3xl font-black text-gray-900 group-hover:scale-105 transition-transform origin-left">
-              {{ user.avg }}
+              <SkeletonLoader :is-loading="isLoading" type="text" class="w-16 h-8 rounded-lg inline-block">
+                {{ user.avg }}
+              </SkeletonLoader>
             </h3>
             <p class="text-xs font-medium text-gray-400">Current GWA</p>
           </div>
@@ -140,7 +157,9 @@ const navigateTo = (routeName) => {
           <div class="flex flex-col gap-1 relative z-10">
             <p class="text-xs uppercase font-bold text-gray-500 tracking-widest">Financial Status</p>
             <h3 class="text-3xl font-black text-gray-900 group-hover:scale-105 transition-transform origin-left">
-              {{ store.formattedBalance }}
+              <SkeletonLoader :is-loading="isLoading" type="text" class="w-24 h-8 rounded-lg inline-block">
+                {{ store.formattedBalance }}
+              </SkeletonLoader>
             </h3>
             <p class="text-xs font-medium text-gray-400">Account Balance</p>
           </div>

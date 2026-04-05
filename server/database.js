@@ -55,16 +55,16 @@ const initDb = () => {
           
           // Seed Initial Subjects for Red
           const subjects = [
-            ['CS301', 'Software Engineering', '1.25', 3, 'MW 09:00-10:30', 'Room 302', 'Dr. Santos', 'Passed'],
-            ['CS302', 'Web Development', '1.50', 3, 'TTH 01:00-02:30', 'Comp Lab 1', 'Engr. Reyes', 'Passed'],
-            ['CS303', 'Mobile Computing', '1.75', 3, 'Fri 08:00-11:00', 'Comp Lab 2', 'Ms. Garcia', 'Passed'],
-            ['CS304', 'Networking 1', '1.50', 3, 'Sat 09:00-12:00', 'Room 405', 'Mr. Lopez', 'Passed'],
-            ['GEN101', 'Ethics', '1.00', 3, 'MW 02:00-03:30', 'Room 201', 'Dr. Cruz', 'Passed']
+            ['CS301', 'Software Engineering', '1.25', 3, '09:00 AM - 10:30 AM', 'Room 302', 'Mon, Wed', 'Dr. Santos', 'Passed'],
+            ['CS302', 'Web Development', '1.50', 3, '01:00 PM - 02:30 PM', 'Comp Lab 1', 'Tue, Thu', 'Engr. Reyes', 'Passed'],
+            ['CS303', 'Mobile Computing', '1.75', 3, '08:00 AM - 11:00 AM', 'Comp Lab 2', 'Fri', 'Ms. Garcia', 'Passed'],
+            ['CS304', 'Networking 1', '1.50', 3, '09:00 AM - 12:00 PM', 'Room 405', 'Sat', 'Mr. Lopez', 'Passed'],
+            ['GEN101', 'Ethics', '1.00', 3, '02:00 PM - 03:30 PM', 'Room 201', 'Mon, Wed', 'Dr. Cruz', 'Passed']
           ];
           
           subjects.forEach(s => {
             db.run(
-              "INSERT INTO subjects (student_id, code, name, grade, units, time, room, instructor, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              "INSERT INTO subjects (student_id, code, name, grade, units, time, room, days, instructor, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
               [studentId, ...s]
             );
           });
@@ -91,11 +91,17 @@ const initDb = () => {
           units INTEGER NOT NULL,
           time TEXT,
           room TEXT,
+          days TEXT,
           instructor TEXT,
           status TEXT DEFAULT 'Passed',
           FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `);
+
+      // Migration: Add days column if missing
+      db.run("ALTER TABLE subjects ADD COLUMN days TEXT", (err) => {
+        // Ignore error if column already exists
+      });
 
       // Posts table (Student Thoughts and Admin Announcements)
       db.run(`
@@ -134,6 +140,20 @@ const initDb = () => {
           UNIQUE(post_id, user_id),
           FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
+      // Messages table (Chat)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          sender_id TEXT NOT NULL,
+          receiver_id TEXT NOT NULL,
+          content TEXT NOT NULL,
+          is_read INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
         )
       `, (err) => {
         if (err) reject(err);

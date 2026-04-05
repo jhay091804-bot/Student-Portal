@@ -12,7 +12,8 @@ import {
   Settings, 
   LogOut,
   X,
-  Users
+  Users,
+  MessageSquare
 } from 'lucide-vue-next';
 
 import { usePortalStore } from '../stores/portalStore';
@@ -34,6 +35,7 @@ const menuItems = computed(() => {
       category: 'COMMUNITY',
       items: [
         { name: 'Student Wall', icon: Users, route: 'wall' },
+        { name: 'Direct Messages', icon: MessageSquare, route: 'messages' },
       ]
     }
   ];

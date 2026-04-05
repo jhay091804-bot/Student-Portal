@@ -39,9 +39,9 @@ const migrate = async () => {
     console.log(`📚 Migrating ${subjects.length} subjects...`);
     for (const s of subjects) {
       await pgClient.query(`
-        INSERT INTO subjects (student_id, code, name, grade, units, time, room, instructor, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      `, [s.student_id, s.code, s.name, s.grade, s.units, s.time, s.room, s.instructor, s.status]);
+        INSERT INTO subjects (student_id, code, name, grade, units, time, room, days, instructor, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `, [s.student_id, s.code, s.name, s.grade, s.units, s.time, s.room, s.days, s.instructor, s.status]);
     }
 
     // 3. Migrate Posts
@@ -96,4 +96,3 @@ const migrate = async () => {
 };
 
 migrate();
- burial;

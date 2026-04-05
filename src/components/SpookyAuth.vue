@@ -1,8 +1,11 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted, reactive } from 'vue';
 import { usePortalStore } from '../stores/portalStore';
 import { useRouter } from 'vue-router';
 import { Lock, User, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck } from 'lucide-vue-next';
+import SkeletonLoader from './SkeletonLoader.vue';
+
+const emit = defineEmits(['status-change']);
 
 const props = defineProps({
   onSuccess: { type: Function, default: () => {} }
@@ -33,6 +36,7 @@ const handleLogin = async () => {
   
   if (result === true || result?.success) {
     loginStatus.value = 'success';
+    emit('status-change', 'success');
     // Small delay to show the happy ghost
     setTimeout(() => {
       props.onSuccess();
@@ -45,8 +49,11 @@ const handleLogin = async () => {
   } else {
     error.value = result?.message || 'Invalid credentials.';
     loginStatus.value = 'error';
+    emit('status-change', 'error');
   }
 };
+
+const isAuthenticating = computed(() => store.authLoading);
 
 // SVG Animation Computed
 const ghostEyeTranslate = computed(() => {
@@ -74,8 +81,9 @@ const ghostBaseTranslate = computed(() => {
 <template>
   <div class="space-y-6 animate-in fade-in duration-500">
     
-    <!-- Ghost Interaction Area (Dark Blue for visibility) -->
-    <div class="h-40 flex items-center justify-center relative bg-[#002147] rounded-3xl overflow-hidden mb-4 shadow-2xl border border-white/5">
+    <!-- Ghost Interaction Area (Glass Style) -->
+    <div ref="ghostRef" class="h-40 flex items-center justify-center relative bg-white/5 backdrop-blur-md rounded-3xl overflow-hidden mb-4 shadow-inner border border-white/10">
+       <SkeletonLoader :is-loading="isAuthenticating" type="rect" class="absolute inset-0 z-20" />
        <svg viewBox="0 0 450 300" class="w-full h-full drop-shadow-2xl scale-90">
           <!-- The Only Ghost (Interactive Peek-a-Boo) -->
           <g class="ghost-float-fast" :style="{ transform: ghostBaseTranslate }">
@@ -84,16 +92,19 @@ const ghostBaseTranslate = computed(() => {
             <!-- Eyes Wrapper (Closing eyes when typing password) -->
             <g class="eye-transition" :style="{ transform: ghostEyeTranslate }">
               <template v-if="activeField !== 'password' || showPassword">
-                <circle cx="45" cy="80" r="8" fill="#002147" />
-                <circle cx="105" cy="80" r="8" fill="#002147" />
+                <!-- Pupils following cursor -->
+                <g :style="{ transform: pupilShift }">
+                   <circle cx="45" cy="80" r="8" fill="#001A4D" />
+                   <circle cx="105" cy="80" r="8" fill="#001A4D" />
+                </g>
               </template>
               <template v-else>
-                <path d="M35,80 Q45,90 55,80" fill="none" stroke="#002147" stroke-width="4" stroke-linecap="round" />
-                <path d="M95,80 Q105,90 115,80" fill="none" stroke="#002147" stroke-width="4" stroke-linecap="round" />
+                <path d="M35,80 Q45,90 55,80" fill="none" stroke="#001A4D" stroke-width="4" stroke-linecap="round" />
+                <path d="M95,80 Q105,90 115,80" fill="none" stroke="#001A4D" stroke-width="4" stroke-linecap="round" />
               </template>
             </g>
 
-            <path :d="mouthPath" fill="none" :stroke="loginStatus === 'success' ? '#0ea5e9' : '#002147'" stroke-width="3" stroke-linecap="round" class="eye-transition" />
+            <path :d="mouthPath" fill="none" :stroke="loginStatus === 'success' ? '#0ea5e9' : '#001A4D'" stroke-width="3" stroke-linecap="round" class="eye-transition" />
             
             <circle v-if="loginStatus === 'error'" class="tear-drop" cx="45" cy="95" r="4" fill="#3b82f6" style="animation-delay: 0.5s" />
             <circle v-if="loginStatus === 'error'" class="tear-drop" cx="105" cy="95" r="4" fill="#3b82f6" style="animation-delay: 2.2s" />
@@ -105,34 +116,34 @@ const ghostBaseTranslate = computed(() => {
     <div class="space-y-4">
       <div v-if="error" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-[10px] font-black uppercase text-center animate-shake border border-red-100">{{ error }}</div>
       
-      <div class="space-y-2">
-        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Student ID</label>
+      <div class="space-y-2 text-left">
+        <label class="text-[10px] font-black text-white/70 uppercase tracking-widest ml-1">Student ID</label>
         <div class="relative group">
-          <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-[#002147] transition-colors"><User :size="18" /></span>
+          <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-white/40 group-focus-within:text-[#D4AF37] transition-colors"><User :size="18" /></span>
           <input 
             v-model="studentId" 
             @focus="activeField = 'id'"
             @blur="activeField = ''"
             type="text" 
             placeholder="e.g., 51762023" 
-            class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 pl-11 pr-4 focus:outline-none focus:border-[#002147] font-black text-sm text-[#002147] transition-colors" 
+            class="w-full bg-white/10 backdrop-blur-md border-2 border-white/5 rounded-2xl py-3.5 pl-11 pr-4 focus:outline-none focus:border-[#D4AF37] font-black text-sm text-white placeholder:text-white/30 transition-all select-none" 
           />
         </div>
       </div>
 
-      <div class="space-y-2">
-        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
+      <div class="space-y-2 text-left">
+        <label class="text-[10px] font-black text-white/70 uppercase tracking-widest ml-1">Password</label>
         <div class="relative group">
-          <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 group-focus-within:text-[#002147] transition-colors"><Lock :size="18" /></span>
+          <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-white/40 group-focus-within:text-[#D4AF37] transition-colors"><Lock :size="18" /></span>
           <input 
             v-model="password" 
             @focus="activeField = 'password'"
             @blur="activeField = ''"
             :type="showPassword ? 'text' : 'password'" 
             placeholder="••••••••" 
-            class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 pl-11 pr-11 focus:outline-none focus:border-[#002147] font-black text-sm text-[#002147] transition-colors font-mono" 
+            class="w-full bg-white/10 backdrop-blur-md border-2 border-white/5 rounded-2xl py-3.5 pl-11 pr-11 focus:outline-none focus:border-[#D4AF37] font-black text-sm text-white placeholder:text-white/30 transition-all font-mono select-none" 
           />
-          <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-[#002147] transition-colors">
+          <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-4 flex items-center text-white/40 hover:text-[#D4AF37] transition-colors">
             <Eye v-if="!showPassword" :size="18" />
             <EyeOff v-else :size="18" />
           </button>
@@ -142,7 +153,7 @@ const ghostBaseTranslate = computed(() => {
       <button 
         @click="handleLogin" 
         :disabled="store.authLoading || loginStatus === 'success'" 
-        class="w-full bg-[#002147] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 flex items-center justify-center gap-2 hover:bg-[#003366] transition-all active:scale-95 disabled:opacity-50"
+        class="w-full bg-[#001A4D] hover:bg-[#003366] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.4),0_0_60px_rgba(255,255,255,0.1)] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 border border-white/30"
       >
         <template v-if="!store.authLoading && loginStatus !== 'success'">
           Sign In <ArrowRight :size="16"/>
@@ -151,7 +162,7 @@ const ghostBaseTranslate = computed(() => {
           Welcome Back!
         </template>
         <template v-else>
-          <Loader2 class="animate-spin" :size="16"/> Authenticating
+           <SkeletonLoader :is-loading="true" type="rect" class="w-24 h-4 rounded-full" />
         </template>
       </button>
     </div>

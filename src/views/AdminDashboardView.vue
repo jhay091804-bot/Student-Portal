@@ -5,14 +5,16 @@ import { useRouter, useRoute } from 'vue-router';
 import { 
   Users, UserPlus, Search, Edit2, Trash2, LogOut, LayoutDashboard, 
   BarChart3, Settings, Bell, Wallet, TrendingUp, ShieldAlert, Save, 
-  CheckCircle2, Building2, Megaphone, BookOpen, Loader2
+  CheckCircle2, Building2, Megaphone, BookOpen, Loader2, MessageSquare,
+  Send, UserIcon
 } from 'lucide-vue-next';
 import AdminStudentModal from '../components/AdminStudentModal.vue';
+import SkeletonLoader from '../components/SkeletonLoader.vue';
 
 const store = usePortalStore();
 const router = useRouter();
 const route = useRoute();
-const currentView = ref(route.query.view || 'dashboard'); // 'dashboard', 'students', 'analytics', 'settings'
+const currentView = ref(route.query.view || 'dashboard'); // 'dashboard', 'students', 'analytics', 'messages', 'settings'
 const searchQuery = ref('');
 const isModalOpen = ref(false);
 const editingStudent = ref(null);
@@ -22,6 +24,13 @@ const settings = ref({ campusName: '', maintenanceMode: false, announcement: '' 
 const isSavingSettings = ref(false);
 const isNotificationOpen = ref(false);
 const isGeneratingReport = ref(false);
+const isLoadingData = ref(true);
+
+const selectedStudentId = ref(null);
+const adminMessageInput = ref('');
+const chatScroll = ref(null);
+let conversationsPoll = null;
+let chatPoll = null;
 
 const notifications = ref([
   { id: 1, title: 'New Enrollment', message: 'John Doe has completed registration.', time: '2 mins ago', unread: true },
@@ -30,6 +39,9 @@ const notifications = ref([
 
 onMounted(async () => {
   await loadAllData();
+  if (currentView.value === 'messages') {
+    startConversationsPolling();
+  }
 });
 
 const setView = (v) => {
@@ -39,17 +51,83 @@ const setView = (v) => {
   router.push({ query: { ...route.query, view: v } });
 };
 
-// Sync view with URL query changes (e.g. from Sidebar)
+// Sync view with URL query changes
 watch(() => route.query.view, (newView) => {
-  if (newView && ['dashboard', 'students', 'analytics', 'settings'].includes(newView)) {
+  const validViews = ['dashboard', 'students', 'analytics', 'messages', 'settings'];
+  if (newView && validViews.includes(newView)) {
     currentView.value = newView;
   } else if (!newView) {
     currentView.value = 'dashboard';
   }
 });
 
+watch(currentView, (newView) => {
+  if (newView === 'messages') {
+    startConversationsPolling();
+  } else {
+    stopConversationsPolling();
+    stopChatPolling();
+  }
+});
+
+const startConversationsPolling = () => {
+  if (conversationsPoll) return;
+  store.fetchConversations();
+  conversationsPoll = setInterval(() => store.fetchConversations(), 5000);
+};
+
+const stopConversationsPolling = () => {
+  if (conversationsPoll) {
+    clearInterval(conversationsPoll);
+    conversationsPoll = null;
+  }
+};
+
+const startChatPolling = (studentId) => {
+  stopChatPolling();
+  selectedStudentId.value = studentId;
+  fetchChat();
+  chatPoll = setInterval(fetchChat, 3000);
+};
+
+const stopChatPolling = () => {
+  if (chatPoll) {
+    clearInterval(chatPoll);
+    chatPoll = null;
+  }
+};
+
+const fetchChat = async () => {
+  if (!selectedStudentId.value) return;
+  const oldLength = store.chatMessages.length;
+  await store.fetchStudentChat(selectedStudentId.value);
+  if (store.chatMessages.length > oldLength) {
+    scrollToBottom();
+  }
+};
+
+const scrollToBottom = async () => {
+  await nextTick();
+  if (chatScroll.value) {
+    chatScroll.value.scrollTop = chatScroll.value.scrollHeight;
+  }
+};
+
+const handleSendAdminMessage = async () => {
+  if (!adminMessageInput.value.trim() || !selectedStudentId.value) return;
+  const content = adminMessageInput.value;
+  adminMessageInput.value = '';
+  await store.sendToStudent(selectedStudentId.value, content);
+  scrollToBottom();
+};
+
+const formatTime = (dateStr) => {
+  const date = dateStr ? new Date(dateStr) : new Date();
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
 const markAllRead = () => {
-  notifications.value.forEach(n => n.unread = true); // Set to true if you want them read
+  notifications.value.forEach(n => n.unread = true);
   isNotificationOpen.value = false;
 };
 
@@ -62,6 +140,7 @@ const handleGenerateReport = () => {
 };
 
 const loadAllData = async () => {
+  isLoadingData.value = true;
   try {
     await store.fetchStudents();
     const statsData = await store.fetchAdminStats();
@@ -70,6 +149,8 @@ const loadAllData = async () => {
     if (settingsData) settings.value = settingsData;
   } catch (err) {
     console.error('Data Load Error', err);
+  } finally {
+    isLoadingData.value = false;
   }
 };
 
@@ -86,9 +167,14 @@ const handleEdit = (student, tab = 'info') => {
 };
 
 const handleDelete = async (id) => {
-  if (confirm('Are you sure you want to delete this student?')) {
-    await store.deleteStudent(id);
-    await loadAllData();
+  if (confirm('Are you sure you want to delete this student? All their subject records and wall posts will also be permanently removed.')) {
+    const result = await store.deleteStudent(id);
+    if (result.success) {
+      alert(result.message);
+      await loadAllData();
+    } else {
+      alert(result.message);
+    }
   }
 };
 
@@ -134,7 +220,7 @@ const getProgramPercentage = (count) => {
       <!-- Quick Actions / View Switcher (Old School Tabs) -->
       <div class="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
         <button 
-          v-for="v in ['dashboard', 'students', 'analytics', 'settings']" 
+          v-for="v in ['dashboard', 'students', 'analytics', 'messages', 'settings']" 
           :key="v"
           @click="setView(v)"
           :class="['px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap', currentView === v ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-primary']"
@@ -152,7 +238,11 @@ const getProgramPercentage = (count) => {
           <div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
           <div class="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4 shadow-sm"><Users :size="24" /></div>
           <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Enrolled Students</p>
-          <h3 class="text-3xl font-black text-gray-900 mt-1">{{ stats.totalStudents }}</h3>
+          <h3 class="text-3xl font-black text-gray-900 mt-1">
+            <SkeletonLoader :is-loading="isLoadingData" type="text" class="w-16 h-8 rounded-lg inline-block">
+              {{ stats.totalStudents }}
+            </SkeletonLoader>
+          </h3>
           <div class="mt-3 flex items-center gap-2 text-[10px] font-bold text-green-600 bg-green-50 w-fit px-2 py-1 rounded-lg uppercase"><TrendingUp :size="12" /> +12% Growth</div>
         </div>
 
@@ -160,7 +250,11 @@ const getProgramPercentage = (count) => {
           <div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
           <div class="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4 shadow-sm"><Wallet :size="24" /></div>
           <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Outstanding Balance</p>
-          <h3 class="text-3xl font-black text-gray-900 mt-1">₱{{ (stats.totalBalance || 0).toLocaleString() }}</h3>
+          <h3 class="text-3xl font-black text-gray-900 mt-1">
+            <SkeletonLoader :is-loading="isLoadingData" type="text" class="w-24 h-8 rounded-lg inline-block">
+              ₱{{ (stats.totalBalance || 0).toLocaleString() }}
+            </SkeletonLoader>
+          </h3>
           <div class="mt-3 flex items-center gap-2 text-[10px] font-bold text-primary bg-primary/5 w-fit px-2 py-1 rounded-lg uppercase"><CheckCircle2 :size="12" /> Stable Collection</div>
         </div>
 
@@ -181,7 +275,12 @@ const getProgramPercentage = (count) => {
              <button @click="setView('students')" class="text-sm font-bold text-primary hover:underline">View All</button>
            </div>
            <div class="space-y-4">
-              <div v-for="s in store.students.slice(0, 4)" :key="s.id" class="flex items-center justify-between p-3 bg-gray-50/50 rounded-2xl border border-gray-50 group hover:bg-white hover:border-primary/20 transition-all">
+              <template v-if="isLoadingData">
+                <div v-for="i in 4" :key="i" class="h-16 rounded-2xl">
+                   <SkeletonLoader :is-loading="true" type="rect" />
+                </div>
+              </template>
+              <div v-else v-for="s in store.students.slice(0, 4)" :key="s.id" class="flex items-center justify-between p-3 bg-gray-50/50 rounded-2xl border border-gray-50 group hover:bg-white hover:border-primary/20 transition-all">
                 <div class="flex items-center gap-3">
                   <img :src="s.avatar" class="w-10 h-10 rounded-xl" alt="">
                   <div>
@@ -339,6 +438,103 @@ const getProgramPercentage = (count) => {
            </div>
          </section>
        </div>
+    </div>
+
+    <!-- VIEW: MESSAGES (CHAT) -->
+    <div v-if="currentView === 'messages'" class="h-[600px] flex gap-6 animate-in fade-in slide-in-from-bottom-4">
+      <!-- Conversation Sidebar -->
+      <aside class="w-full sm:w-1/3 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+        <div class="p-6 border-b border-gray-50">
+          <h3 class="font-bold text-gray-800 tracking-tight">Conversations</h3>
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Student Inquiries</p>
+        </div>
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+          <div 
+            v-for="conv in store.conversations" 
+            :key="conv.id"
+            @click="startChatPolling(conv.id)"
+            :class="['p-4 flex items-center gap-3 cursor-pointer transition-all hover:bg-gray-50 border-b border-gray-50', selectedStudentId === conv.id ? 'bg-primary/5 border-l-4 border-l-primary' : '']"
+          >
+            <div class="relative">
+              <img :src="conv.avatar" class="w-10 h-10 rounded-xl" alt="">
+              <span v-if="conv.unread_count > 0" class="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                {{ conv.unread_count }}
+              </span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex justify-between items-baseline">
+                <p class="font-bold text-gray-800 text-sm truncate">{{ conv.name }}</p>
+                <span class="text-[8px] font-bold text-gray-400">{{ formatTime(conv.last_message_at) }}</span>
+              </div>
+              <p class="text-xs text-gray-400 truncate">{{ conv.last_message || 'No messages yet' }}</p>
+            </div>
+          </div>
+          <div v-if="store.conversations.length === 0" class="p-8 text-center opacity-30">
+            <MessageSquare :size="32" class="mx-auto mb-2" />
+            <p class="text-[10px] font-bold uppercase tracking-widest">No conversations</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Chat Window -->
+      <main class="hidden sm:flex flex-1 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex-col">
+        <template v-if="selectedStudentId">
+          <!-- Chat Header -->
+          <div class="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+            <div class="flex items-center gap-3">
+              <img :src="store.conversations.find(c => c.id === selectedStudentId)?.avatar" class="w-10 h-10 rounded-xl shadow-sm" alt="">
+              <div>
+                <p class="font-bold text-gray-800 text-sm">{{ store.conversations.find(c => c.id === selectedStudentId)?.name }}</p>
+                <p class="text-[9px] font-bold text-primary uppercase tracking-widest">{{ store.conversations.find(c => c.id === selectedStudentId)?.program }} • {{ selectedStudentId }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Messages -->
+          <div ref="chatScroll" class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-slate-50/30">
+            <div 
+              v-for="msg in store.chatMessages" 
+              :key="msg.id"
+              :class="['flex', msg.sender_id === 'admin@chcci.edu.ph' ? 'justify-end' : 'justify-start']"
+            >
+              <div :class="['max-w-[70%] p-4 rounded-2xl text-sm font-medium shadow-sm', msg.sender_id === 'admin@chcci.edu.ph' ? 'bg-primary text-white rounded-tr-none' : 'bg-white text-gray-700 rounded-tl-none border border-gray-100']">
+                {{ msg.content }}
+                <p :class="['text-[8px] mt-1 uppercase font-bold tracking-widest', msg.sender_id === 'admin@chcci.edu.ph' ? 'text-white/60 text-right' : 'text-gray-400']">
+                  {{ formatTime(msg.created_at) }}
+                </p>
+              </div>
+            </div>
+            <div v-if="store.chatMessages.length === 0" class="flex flex-col items-center justify-center h-full text-center p-8 opacity-20">
+              <MessageSquare :size="48" class="mb-4" />
+              <p class="text-xs font-bold uppercase tracking-widest">Start a conversation with this student.</p>
+            </div>
+          </div>
+
+          <!-- Chat Input -->
+          <div class="p-6 border-t border-gray-50 bg-white">
+            <div class="relative">
+              <input 
+                v-model="adminMessageInput"
+                @keyup.enter="handleSendAdminMessage"
+                type="text" 
+                placeholder="Type your response..."
+                class="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 pl-6 pr-14 text-sm font-bold focus:outline-none focus:border-primary focus:bg-white transition-all shadow-inner"
+              >
+              <button 
+                @click="handleSendAdminMessage"
+                class="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-primary text-white rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all"
+              >
+                <Send :size="18" />
+              </button>
+            </div>
+          </div>
+        </template>
+        <div v-else class="flex-1 flex flex-col items-center justify-center text-center p-12 opacity-30">
+          <MessageSquare :size="64" class="mb-4" />
+          <h4 class="text-xl font-bold italic tracking-tight">Select a conversation</h4>
+          <p class="text-xs font-bold uppercase tracking-widest mt-2">Click on a student to see their message history.</p>
+        </div>
+      </main>
     </div>
 
     <!-- VIEW: SETTINGS -->

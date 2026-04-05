@@ -43,6 +43,7 @@ const initDbPg = async () => {
         units INTEGER NOT NULL,
         time TEXT,
         room TEXT,
+        days TEXT,
         instructor TEXT,
         status TEXT DEFAULT 'Passed'
       )
@@ -80,6 +81,18 @@ const initDbPg = async () => {
         type TEXT NOT NULL DEFAULT 'like',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(post_id, user_id)
+      )
+    `);
+
+    // Messages table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        receiver_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        is_read INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 

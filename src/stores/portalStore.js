@@ -58,15 +58,94 @@ export const usePortalStore = defineStore('portal', {
       { date: '2024-03-15', description: 'Tuition Fee - Second Semester', amount: 15000, type: 'Charge' },
       { date: '2024-03-20', description: 'Downpayment', amount: 10000, type: 'Payment' },
       { date: '2026-04-01', description: 'Online Payment (Portal)', amount: 2000, type: 'Payment' }
-    ]
+    ],
+    chatMessages: [],
+    conversations: [],
+    contacts: []
   }),
   getters: {
     isAdmin: (state) => state.user?.role === 'admin',
     unreadNotifications: (state) => state.notifications.filter(n => !n.read).length,
+    unreadMessages: (state) => state.conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0),
     totalUnits: (state) => state.grades.reduce((acc, curr) => acc + curr.units, 0),
     formattedBalance: (state) => `₱ ${(state.user?.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
   },
   actions: {
+    // --- CHAT ACTIONS ---
+    async fetchMyMessages() {
+      try {
+        const response = await api.get('/chat/conversations');
+        this.conversations = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('Fetch conversations failed:', error);
+        return [];
+      }
+    },
+    async fetchChatContacts() {
+      try {
+        const response = await api.get('/chat/contacts');
+        this.contacts = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('Fetch contacts failed:', error);
+        return [];
+      }
+    },
+    async fetchPeerChat(otherId) {
+      try {
+        const response = await api.get(`/chat/messages/${otherId}`);
+        this.chatMessages = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('Fetch peer chat failed:', error);
+        return [];
+      }
+    },
+    async sendMessage(recipientId, content) {
+      try {
+        const response = await api.post('/chat/messages', { content, receiver_id: recipientId });
+        this.chatMessages.push(response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Send message failed:', error);
+        return null;
+      }
+    },
+    async sendToAdmin(content) {
+      return this.sendMessage(null, content); // Null defaults to admin in backend
+    },
+    async fetchConversations() {
+      try {
+        const response = await api.get('/admin/chat/conversations');
+        this.conversations = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('Fetch conversations failed:', error);
+        return [];
+      }
+    },
+    async fetchStudentChat(studentId) {
+      try {
+        const response = await api.get(`/admin/chat/messages/${studentId}`);
+        this.chatMessages = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('Fetch student chat failed:', error);
+        return [];
+      }
+    },
+    async sendToStudent(studentId, content) {
+      try {
+        const response = await api.post(`/admin/chat/messages/${studentId}`, { content });
+        this.chatMessages.push(response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Send message to student failed:', error);
+        return null;
+      }
+    },
+
     async signIn(id, password) {
       this.authLoading = true;
       try {
@@ -152,12 +231,12 @@ export const usePortalStore = defineStore('portal', {
     },
     async deleteStudent(id) {
       try {
-        await api.delete(`/admin/students/${id}`);
+        const response = await api.delete(`/admin/students/${id}`);
         await this.fetchStudents();
-        return true;
+        return { success: true, message: response.data.message };
       } catch (error) {
         console.error('Delete student failed:', error);
-        return false;
+        return { success: false, message: error.response?.data?.error || 'Deletion failed.' };
       }
     },
 
@@ -241,6 +320,15 @@ export const usePortalStore = defineStore('portal', {
         return true;
       } catch (error) {
         console.error('Add subject failed:', error);
+        return false;
+      }
+    },
+    async updateSubject(id, subjectData) {
+      try {
+        await api.put(`/admin/subjects/${id}`, subjectData);
+        return true;
+      } catch (error) {
+        console.error('Update subject failed:', error);
         return false;
       }
     },

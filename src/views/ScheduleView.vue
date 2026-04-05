@@ -58,17 +58,27 @@ const times = ['08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:0
           
           <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-50">
             <div class="flex items-center gap-2">
-              <Clock class="w-4 h-4 text-primary" />
+              <Calendar class="w-4 h-4 text-primary" />
+              <div class="min-w-0">
+                <p class="text-[10px] uppercase font-bold text-gray-400 tracking-tighter">Days</p>
+                <p class="text-xs font-bold text-gray-700 truncate">{{ item.days || 'TBA' }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <Clock class="w-4 h-4 text-purple-500" />
               <div class="min-w-0">
                 <p class="text-[10px] uppercase font-bold text-gray-400 tracking-tighter">Time</p>
                 <p class="text-xs font-bold text-gray-700 truncate">{{ item.time }}</p>
               </div>
             </div>
+          </div>
+          
+          <div class="grid grid-cols-1 pt-2">
             <div class="flex items-center gap-2">
               <MapPin class="w-4 h-4 text-accent" />
               <div class="min-w-0">
                 <p class="text-[10px] uppercase font-bold text-gray-400 tracking-tighter">Location</p>
-                <p class="text-xs font-bold text-gray-700 truncate">{{ item.room }}</p>
+                <p class="text-xs font-bold text-gray-700">{{ item.room }}</p>
               </div>
             </div>
           </div>

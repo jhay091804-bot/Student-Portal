@@ -2,7 +2,7 @@
 import { ref, reactive, computed } from 'vue';
 import { usePortalStore } from '../stores/portalStore';
 import { useRouter } from 'vue-router';
-import { User, Mail, GraduationCap, ArrowRight, ArrowLeft, Loader2, CheckCircle, ShieldCheck, Lock, Eye, EyeOff, Check, X } from 'lucide-vue-next';
+import { User, Mail, GraduationCap, ArrowRight, ArrowLeft, Loader2, CheckCircle, ShieldCheck, Lock, Eye, EyeOff, Check, X, Files } from 'lucide-vue-next';
 
 const store = usePortalStore();
 const router = useRouter();
