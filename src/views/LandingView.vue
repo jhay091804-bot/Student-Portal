@@ -223,7 +223,7 @@ const stats = [
     <!-- Hero Section (Immersive Design) -->
     <main class="relative min-h-[90vh] flex items-center pt-20 overflow-hidden bg-[#000a1f]">
       <!-- New Premium Backdrop -->
-      <img src="/C:/Users/ocamp/.gemini/antigravity/brain/0999f55c-cc6f-43cc-8521-ab73d173dcce/premium_academic_hero_v2_1775293605373.png" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" alt="Campus Backdrop" />
+      <img src="https://images.unsplash.com/photo-1541339907198-e08756ebafe3?auto=format&fit=crop&q=80&w=2070" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" alt="Campus Backdrop" />
       
       <!-- Animated Background Blobs -->
       <div class="blob w-96 h-96 bg-[#001A4D] top-[-10%] left-[-10%]"></div>
