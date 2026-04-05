@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: student-portal
+    runtime: node
+    plan: free
+    region: singapore # Choose the one closest to you (singapore, oregon, frankfurt, ohio)
+    buildCommand: npm install && npm run build
+    startCommand: node server/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://student-portal.onrender.com # Change this once you know your Render URL
+      - key: VITE_API_BASE
+        value: /api
