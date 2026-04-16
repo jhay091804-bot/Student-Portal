@@ -5,8 +5,8 @@ const fs = require('fs');
 const path = require('path');
 
 // Connection Configuration
-const mysqlConfig = process.env.MYSQL_URL ? {
-    uri: process.env.MYSQL_URL // support for URI strings like mysql://user:pass@host:port/db
+const mysqlConfig = process.env.MYSQL_URL || process.env.MYSQL_URI ? {
+    uri: process.env.MYSQL_URL || process.env.MYSQL_URI // support for URI strings like mysql://user:pass@host:port/db
 } : {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
