@@ -177,7 +177,7 @@ const nationalities = ['Filipino', 'American', 'Chinese', 'Japanese', 'Korean', 
 
             <!-- Step 3: Detailed Identity -->
             <div v-else-if="currentStep === 3" key="step3" class="space-y-4">
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-1">
                   <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Birthdate</label>
                   <input type="date" v-model="form.birthdate" class="w-full bg-white border-2 border-slate-100 rounded-2xl p-3 text-sm font-bold focus:border-primary transition-all outline-none" />
@@ -188,7 +188,7 @@ const nationalities = ['Filipino', 'American', 'Chinese', 'Japanese', 'Korean', 
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-1">
                   <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Height (cm)</label>
                   <input type="text" v-model="form.height" placeholder="170 cm" class="w-full bg-white border-2 border-slate-100 rounded-2xl p-3 text-sm font-bold focus:border-primary transition-all outline-none" />
