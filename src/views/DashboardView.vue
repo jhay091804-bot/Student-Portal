@@ -26,11 +26,18 @@ const settings = ref({ announcement: 'Welcome to the CHCCI Student Portal!' });
 const isLoading = ref(true);
 
 onMounted(async () => {
-  isLoading.value = true;
-  await store.fetchMySubjects();
-  const res = await store.fetchSettings();
-  if (res) settings.value = res;
-  isLoading.value = false;
+  try {
+    isLoading.value = true;
+    // Load subjects/schedule
+    await store.fetchMySubjects();
+    // Load campus announcement
+    const res = await store.fetchSettings();
+    if (res) settings.value = res;
+  } catch (error) {
+    console.error('Dashboard initialization failed:', error);
+  } finally {
+    isLoading.value = false;
+  }
 });
 
 const navigateTo = (routeName) => {

@@ -6,15 +6,17 @@ defineProps({
 </script>
 
 <template>
-  <div 
-    v-if="isLoading"
-    class="skeleton-base"
-    :class="[
-      type === 'circle' ? 'rounded-full' : 'rounded-2xl',
-      type === 'text' ? 'h-3 w-3/4' : 'w-full h-full'
-    ]"
-  ></div>
-  <slot v-else></slot>
+  <span class="contents">
+    <div 
+      v-if="isLoading"
+      class="skeleton-base"
+      :class="[
+        type === 'circle' ? 'rounded-full' : 'rounded-2xl',
+        type === 'text' ? 'h-3 w-3/4' : 'w-full h-full'
+      ]"
+    ></div>
+    <slot v-else></slot>
+  </span>
 </template>
 
 <style scoped>

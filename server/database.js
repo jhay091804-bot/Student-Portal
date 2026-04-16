@@ -171,6 +171,20 @@ const initDb = () => {
         )
       `);
 
+      // Settings Table
+      db.run(`
+        CREATE TABLE IF NOT EXISTS settings (
+          id TEXT PRIMARY KEY,
+          announcement TEXT NOT NULL DEFAULT 'Welcome to the CHCCI Student Portal!'
+        )
+      `);
+
+      db.get("SELECT id FROM settings WHERE id = 'default'", (err, row) => {
+        if (!row) {
+          db.run("INSERT INTO settings (id, announcement) VALUES (?, ?)", ['default', 'Welcome to the CHCCI Student Portal!']);
+        }
+      });
+
       // Organization Members Table
       db.run(`
         CREATE TABLE IF NOT EXISTS organization_members (

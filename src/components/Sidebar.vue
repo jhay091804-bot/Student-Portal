@@ -17,7 +17,8 @@ import {
 } from 'lucide-vue-next';
 
 import { usePortalStore } from '../stores/portalStore';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
+import { computed } from 'vue';
 
 const props = defineProps({
   isOpen: Boolean
@@ -26,8 +27,7 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 const store = usePortalStore();
 const router = useRouter();
-
-import { computed } from 'vue';
+const route = useRoute();
 
 const menuItems = computed(() => {
   const commonItems = [
@@ -113,6 +113,25 @@ const handleAction = (item) => {
     store.signOut();
   }
 };
+
+const isLinkActive = (item) => {
+  // Check if route name matches
+  if (route.name !== item.route) return false;
+  
+  // If there's a view query param requirement, check it
+  if (item.query && item.query.view) {
+    return route.query.view === item.query.view;
+  }
+  
+  // For items without query params, they are active if the route matches and there's no view param in current route
+  // Or if they are student wall, calendar, etc which don't use the 'view' based admin routing
+  if (item.route !== 'admin') return true;
+  
+  // Special case for dashboard when no view is specified
+  if (item.query && item.query.view === 'dashboard' && !route.query.view) return true;
+  
+  return false;
+};
 </script>
 
 <template>
@@ -148,13 +167,12 @@ const handleAction = (item) => {
               <router-link 
                 v-if="!item.action"
                 :to="{ name: item.route, query: item.query }"
-                v-slot="{ isActive }"
                 class="block"
               >
                 <button 
                   :class="[
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group',
-                    isActive 
+                    isLinkActive(item)
                       ? (store.isAdmin ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-[#002147] text-white shadow-lg shadow-[#002147]/20') 
                       : item.color || (store.isAdmin ? 'text-gray-600 hover:bg-gray-50 hover:text-primary' : 'text-gray-600 hover:bg-gray-50 hover:text-[#002147]')
                   ]"
@@ -184,13 +202,12 @@ const handleAction = (item) => {
               <router-link 
                 v-if="!item.action"
                 :to="{ name: item.route, query: item.query }"
-                v-slot="{ isActive }"
                 class="block"
               >
                 <button 
                   :class="[
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group',
-                    isActive 
+                    isLinkActive(item)
                       ? (store.isAdmin ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-[#002147] text-white shadow-lg shadow-[#002147]/20') 
                       : item.color || (store.isAdmin ? 'text-gray-600 hover:bg-gray-50 hover:text-primary' : 'text-gray-600 hover:bg-gray-50 hover:text-[#002147]')
                   ]"

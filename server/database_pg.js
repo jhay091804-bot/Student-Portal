@@ -96,6 +96,19 @@ const initDbPg = async () => {
       )
     `);
 
+    // Settings table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        id TEXT PRIMARY KEY,
+        announcement TEXT NOT NULL DEFAULT 'Welcome to the CHCCI Student Portal!'
+      )
+    `);
+
+    const settingsCheck = await client.query("SELECT id FROM settings WHERE id = 'default'");
+    if (settingsCheck.rows.length === 0) {
+      await client.query("INSERT INTO settings (id, announcement) VALUES ($1, $2)", ['default', 'Welcome to the CHCCI Student Portal!']);
+    }
+
     await client.query('COMMIT');
     console.log('✅ PostgreSQL Database Initialized');
   } catch (e) {

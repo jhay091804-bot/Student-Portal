@@ -14,13 +14,15 @@ const mysqlConfig = process.env.MYSQL_URL ? {
     database: process.env.DB_NAME || 'portal_db'
 };
 
-// Create connection pool
 const pool = mysql.createPool({
     ...mysqlConfig,
     multipleStatements: true, 
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
+    connectTimeout: 10000
 });
 
 const promisePool = pool.promise();
@@ -44,19 +46,24 @@ const initDbMysql = async () => {
             } else {
                 console.error('❌ Could not find mysql_schema.sql for auto-initialization');
             }
+        }
+        
+        // --- ADMIN REPAIR/SEEDING ---
+        // Always run this check after table validation/creation to ensure Admin exists
+        const [adminRows] = await connection.query("SELECT * FROM users WHERE id = 'admin@chcci.edu.ph'");
+        const adminHash = '$2a$10$UnIhRoRVOM6pddo6/UZX1ftnv7eA7xKD82b4lvInwfM22pC1'; // Admin123!
+        
+        if (adminRows.length === 0) {
+            console.log('👤 Admin account missing. Seeding System Admin...');
+            await connection.query(
+                "INSERT INTO users (id, password, name, role, email, avatar, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ['admin@chcci.edu.ph', adminHash, 'System Admin', 'admin', 'admin@chcci.edu.ph', 'https://ui-avatars.com/api/?name=Admin', 1]
+            );
+            console.log('✅ Default Admin created safely');
         } else {
-            // REPAIR STEP: Ensure default admin exists and has valid hash
-            const [adminRows] = await connection.query("SELECT * FROM users WHERE id = 'admin@chcci.edu.ph'");
-            const adminHash = '$2a$10$UnIhRoRVOM6pddo6/UZX1ftnv7eA7xKD82b4lvInwfM22pC1'; // Admin123!
-            
-            if (adminRows.length === 0) {
-                await connection.query(
-                    "INSERT INTO users (id, password, name, role, email, avatar, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    ['admin@chcci.edu.ph', adminHash, 'System Admin', 'admin', 'admin@chcci.edu.ph', 'https://ui-avatars.com/api/?name=Admin', 1]
-                );
-                console.log('✅ Default Admin created safely');
-            } else if (adminRows[0].password.includes('7R9.O.X')) {
-                // If the old invalid placeholder hash is still there, fix it
+            console.log('✅ Admin account confirmed in database');
+            // If the old invalid placeholder hash is still there, fix it
+            if (adminRows[0].password.includes('7R9.O.X')) {
                 await connection.query(
                     "UPDATE users SET password = ? WHERE id = 'admin@chcci.edu.ph'",
                     [adminHash]

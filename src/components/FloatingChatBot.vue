@@ -112,7 +112,8 @@ const handleSend = async (text) => {
   isTyping.value = true;
   
   try {
-    const response = await axios.post('http://localhost:3000/api/chat', { 
+    const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3000/api';
+    const response = await axios.post(`${apiBase}/chat`, { 
       message: content 
     });
     

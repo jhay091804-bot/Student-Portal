@@ -522,15 +522,24 @@ export const usePortalStore = defineStore('portal', {
         return [];
       }
     },
-    async updateOrgApplicationStatus(appId, status) {
+    
+    // --- SYSTEM SETTINGS ACTIONS ---
+    async fetchSettings() {
       try {
-        await api.post(`/admin/organizations/applications/${appId}/status`, { status });
-        // Refresh list
-        await this.fetchOrgApplications();
-        return true;
+        const response = await api.get('/settings');
+        return response.data;
       } catch (error) {
-        console.error('Status update failed:', error);
-        return false;
+        console.error('Fetch settings failed:', error);
+        return { announcement: 'Welcome to the CHCCI Student Portal!' };
+      }
+    },
+    async updateSettings(announcement) {
+      try {
+        const response = await api.put('/settings', { announcement });
+        return response.data;
+      } catch (error) {
+        console.error('Update settings failed:', error);
+        return null;
       }
     },
 

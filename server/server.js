@@ -82,9 +82,22 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS Configuration - Restrict to Frontend
+// CORS Configuration - Restrict to Frontend + Railway Support
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL, 
+      'http://localhost:5173',
+      'http://localhost:3000'
+    ];
+    // Allow if no origin (like same-origin requests) or if it matches whitelist/railway
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.up.railway.app')) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS Blocked] Origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -802,7 +815,6 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, (req, res) => {
     db.get("SELECT SUM(balance) as totalBalance FROM users WHERE role = 'student'", (err, row) => {
       stats.totalBalance = row ? row.totalBalance : 0;
       stats.criticalAverage = '0.00'; // Reset to static
-
       db.all("SELECT program, COUNT(*) as count FROM users WHERE role = 'student' GROUP BY program", (err, rows) => {
         stats.programDistribution = rows || [];
         res.json(stats);
@@ -940,7 +952,7 @@ const KNOWLEDGE_BASE = {
     responses: [
       "To start your journey at CHCCI, simply create an account on the landing page! After that, you can follow the step-by-step 'Enrollment Guide' in your new dashboard.",
       "The admission process is fully digital! Once you register, you can submit requirements and take the entrance exam schedule through this portal.",
-      "Are you a new student? Welcome! You can begin enrollment by clicking 'Enroll Now' on our morning page and following the onscreen instructions."
+      "Are you a new student? Welcome! You can begin enrollment by clicking 'Enroll Now' on our landing page and following the onscreen instructions."
     ]
   },
   financial: {
@@ -1007,6 +1019,23 @@ app.post('/api/chat', (req, res) => {
   setTimeout(() => {
     res.json({ response, category: bestCategory });
   }, delay);
+});
+
+// --- SYSTEM SETTINGS ---
+
+app.get('/api/settings', (req, res) => {
+  db.get("SELECT announcement FROM settings WHERE id = 'default'", [], (err, row) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch settings' });
+    res.json(row || { announcement: 'Welcome to the CHCCI Student Portal!' });
+  });
+});
+
+app.put('/api/settings', authenticateToken, isAdmin, (req, res) => {
+  const { announcement } = req.body;
+  db.run("UPDATE settings SET announcement = ? WHERE id = 'default'", [announcement], function(err) {
+    if (err) return res.status(500).json({ error: 'Failed to update settings' });
+    res.json({ message: 'Settings updated successfully', announcement });
+  });
 });
 
 // Final Catch-all for Frontend SPA (Production)
