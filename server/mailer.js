@@ -2,21 +2,11 @@ const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // true for 465, false for other ports
+  service: 'gmail',
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS?.toString().trim(),
-  },
-  family: 4, // Force IPv4
-  tls: {
-    rejectUnauthorized: false,
-    minVersion: 'TLSv1.2'
-  },
-  connectionTimeout: 15000,
-  greetingTimeout: 15000,
-  socketTimeout: 30000
+    pass: process.env.SMTP_PASS?.toString().replace(/\s+/g, ''),
+  }
 });
 
 /**
