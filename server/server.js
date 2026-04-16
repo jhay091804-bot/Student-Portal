@@ -138,11 +138,19 @@ app.get('/api/debug/test-email', async (req, res) => {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     return res.status(500).json({ error: 'SMTP credentials not set in environment variables' });
   }
-  const result = await sendVerificationEmail(process.env.SMTP_USER, 'test-connection-token', 'System Admin');
-  if (result) {
-    res.json({ success: true, message: 'Test email sent to ' + process.env.SMTP_USER });
-  } else {
-    res.status(500).json({ error: 'Email failed. Check Railway server logs for the full stack trace.' });
+  
+  try {
+    const result = await sendVerificationEmail(process.env.SMTP_USER, 'test-connection-token', 'System Admin');
+    if (result) {
+      res.json({ success: true, message: 'Test email sent to ' + process.env.SMTP_USER });
+    } else {
+      res.status(500).json({ 
+        error: 'Email failed to send. This usually means Port 587 is blocked or Gmail credentials have spaces.',
+        tip: 'Try changing SMTP_PORT to 465 in Railway variables and remove spaces from your password.'
+      });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: err.code });
   }
 });
 
