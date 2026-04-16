@@ -1,4 +1,5 @@
 <script setup>
+import { ref, onMounted } from 'vue';
 import { 
   Calendar, 
   MapPin, 
@@ -57,7 +58,7 @@ const navigateTo = (routeName) => {
       <div>
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
           <SkeletonLoader :is-loading="isLoading" type="text" class="w-48 h-8 rounded-lg">
-            Welcome back, <span class="text-primary italic">{{ user.name }}!</span>
+            Welcome back, <span class="text-primary italic">{{ user?.name || 'Student' }}!</span>
           </SkeletonLoader>
         </h1>
         <p class="text-gray-500 mt-1 flex items-center gap-2">
