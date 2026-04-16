@@ -29,6 +29,20 @@ const postType = ref('post'); // 'post' or 'announcement'
 const selectedImage = ref(null);
 const imagePreview = ref(null);
 const fileInput = ref(null);
+const errorMessage = ref('');
+const showError = ref(false);
+const showSuccess = ref(false);
+
+const triggerError = (msg) => {
+  errorMessage.value = msg;
+  showError.value = true;
+  setTimeout(() => showError.value = false, 5000);
+};
+
+const triggerSuccess = () => {
+  showSuccess.value = true;
+  setTimeout(() => showSuccess.value = false, 3000);
+};
 
 const fetchPosts = async () => {
   isLoading.value = true;
@@ -74,11 +88,14 @@ const handleCreatePost = async () => {
   isSubmittingPost.value = true;
   const result = await store.createWallPost(newPostContent.value, postType.value, selectedImage.value);
   
-  if (result) {
-    posts.value.unshift(result);
+  if (result.success) {
+    posts.value.unshift(result.data);
     newPostContent.value = '';
     postType.value = 'post';
     removeSelectedImage();
+    triggerSuccess();
+  } else {
+    triggerError(result.error);
   }
   isSubmittingPost.value = false;
 };
@@ -146,7 +163,20 @@ const recentThoughts = computed(() => posts.value.filter(p => p.type === 'post')
       </div>
     </div>
 
-    <!-- Main Content Layout -->
+    <!-- Feedback Alerts -->
+    <transition name="slide-down">
+      <div v-if="showError" class="fixed top-24 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-6 py-4 bg-red-600 text-white rounded-3xl shadow-2xl animate-reveal shadow-red-200/50">
+        <AlertCircle :size="20" />
+        <span class="text-sm font-bold">{{ errorMessage }}</span>
+      </div>
+    </transition>
+
+    <transition name="slide-down">
+      <div v-if="showSuccess" class="fixed top-24 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-3xl shadow-2xl animate-reveal shadow-emerald-200/50">
+        <CheckCircle2 :size="20" />
+        <span class="text-sm font-bold">Post shared successfully!</span>
+      </div>
+    </transition>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       
       <!-- Left Sidebar: Profile Summary (Desktop) -->

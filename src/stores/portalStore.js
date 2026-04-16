@@ -428,10 +428,11 @@ export const usePortalStore = defineStore('portal', {
         const response = await api.post('/wall/posts', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        return response.data;
+        return { success: true, data: response.data };
       } catch (error) {
         console.error('Create wall post failed:', error);
-        return null;
+        const errorMessage = error.response?.data?.error || 'Failed to create post. Please check your connection.';
+        return { success: false, error: errorMessage };
       }
     },
     async togglePostReaction(postId, commentId = null, type = 'like') {

@@ -507,33 +507,45 @@ app.get('/api/wall/posts', authenticateToken, (req, res) => {
 
 app.post('/api/wall/posts', 
   authenticateToken, 
-  upload.single('image'),
-  body('content').trim().escape(), // Remove .notEmpty() to allow image-only posts
+  (req, res, next) => {
+    upload.single('image')(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ error: 'Image too large (Max 5MB)' });
+        return res.status(400).json({ error: `Upload error: ${err.message}` });
+      } else if (err) {
+        return res.status(500).json({ error: 'Internal upload failure' });
+      }
+      next();
+    });
+  },
+  body('content').trim().escape(),
   validate,
   (req, res) => {
-    let { content, type } = req.body;
+    const { content, type } = req.body;
     const userId = req.user.id;
     const postType = (req.user.role === 'admin' && type === 'announcement') ? 'announcement' : 'post';
-    const image_url = req.file ? `/uploads/${req.file.filename}` : req.body.image_url;
+    const image_url = req.file ? `/uploads/${req.file.filename}` : null;
 
-    // Fail-safe: If both content and image are missing, reject
+    // Fail-safe: Reject if both content and image are blank
     if (!content && !image_url) {
       return res.status(400).json({ error: 'Post must have either text or an image' });
     }
 
-    // Ensure content is at least an empty string for the DB NOT NULL constraint
-    if (!content) content = '';
-
     db.run(
       "INSERT INTO posts (user_id, content, type, image_url) VALUES (?, ?, ?, ?)",
-      [userId, content, postType, image_url],
+      [userId, content || '', postType, image_url],
       function(err) {
-        if (err) return res.status(500).json({ error: 'Post creation failed' });
+        if (err) {
+          console.error('❌ Wall Post DB Error:', err.message);
+          return res.status(500).json({ error: 'Database error: Could not save post' });
+        }
         
+        const newId = this.lastID;
         db.get(`
           SELECT p.*, u.name as author_name, u.avatar as author_avatar, u.role as author_role, 0 as reaction_count, 0 as user_reacted, 0 as comment_count
           FROM posts p JOIN users u ON p.user_id = u.id WHERE p.id = ?
-        `, [this.lastID], (err, row) => {
+        `, [newId], (err, row) => {
+          if (err || !row) return res.status(500).json({ error: 'Post saved but failed to retrieve for display' });
           res.status(201).json(row);
         });
       }
@@ -892,43 +904,6 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, (req, res) => {
         res.json(stats);
       });
     });
-  });
-});
-
-// --- ORGANIZATION ACTIONS ---
-
-// Get all organizations (with status for current user)
-app.get('/api/organizations', authenticateToken, (req, res) => {
-  const userId = req.user.id;
-  const query = `
-    SELECT o.*, 
-      (SELECT status FROM organization_members WHERE org_id = o.id AND user_id = ?) as membership_status
-    FROM organizations o
-    ORDER BY o.name ASC
-  `;
-  db.all(query, [userId], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Fetch organizations failed' });
-    res.json(rows);
-  });
-});
-
-// Admin: Create organization
-app.post('/api/organizations', authenticateToken, isAdmin, body('name').trim().notEmpty().escape(), validate, (req, res) => {
-  const { name, description, type, icon, color } = req.body;
-  db.run("INSERT INTO organizations (name, description, type, icon, color, members_count) VALUES (?, ?, ?, ?, ?, 0)",
-    [name, description, type || 'Other', icon || 'MessageCircle', color || 'text-gray-600'],
-    function(err) {
-      if (err) return res.status(500).json({ error: 'Org creation failed' });
-      res.json({ id: this.lastID, name, description, type, icon, color, members_count: 0 });
-    }
-  );
-});
-
-// Admin: Delete organization
-app.delete('/api/organizations/:id', authenticateToken, isAdmin, (req, res) => {
-  db.run("DELETE FROM organizations WHERE id = ?", [req.params.id], (err) => {
-    if (err) return res.status(500).json({ error: 'Org deletion failed' });
-    res.json({ message: 'Organization deleted' });
   });
 });
 
