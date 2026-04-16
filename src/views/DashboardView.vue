@@ -49,7 +49,8 @@ const navigateTo = (routeName) => {
   <div class="p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
     
     <!-- Mandatory Onboarding for Students -->
-    <OnboardingModal v-if="user?.role === 'student' && !user?.is_onboarded" />
+    <!-- Mandatory Onboarding for Students -->
+    <OnboardingModal v-if="user?.role === 'student' && (!user?.is_onboarded || user?.is_onboarded === 0 || user?.is_onboarded === '0')" />
 
     <!-- Welcome Header -->
     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

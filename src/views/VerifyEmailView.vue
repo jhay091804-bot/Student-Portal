@@ -37,8 +37,8 @@ onMounted(async () => {
   }
 });
 
-const goToHome = () => {
-  router.push({ name: 'home' });
+const goToLogin = () => {
+  router.push({ name: 'login' });
 };
 </script>
 
@@ -103,7 +103,7 @@ const goToHome = () => {
              <p class="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-[0.2em]">Use this credential to access your hub</p>
           </div>
           <button 
-            @click="goToHome"
+            @click="goToLogin"
             class="w-full bg-[#002147] text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-[#002147]/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3"
           >
             Enter Portal Hub
@@ -127,10 +127,10 @@ const goToHome = () => {
           </div>
           <div class="pt-4 flex flex-col gap-3">
             <button 
-              @click="goToHome"
+              @click="goToLogin"
               class="w-full bg-white border-2 border-slate-100 text-[#002147] py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all font-bold"
             >
-              Back to Home
+              Back to Login
             </button>
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Need help? Contactregistrar@chcci.edu.ph
