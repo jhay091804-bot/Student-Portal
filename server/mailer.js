@@ -5,19 +5,23 @@ require('dotenv').config();
 // Create reusable transporter object
 // Use Port 587 (STARTTLS) which is more reliable in cloud environments
 const transporterConfig = {
+const smtpPort = (process.env.SMTP_PORT || '587').toString().trim();
+const isSecure = smtpPort === '465';
+
+const transporterConfig = {
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: process.env.SMTP_PORT == '465', // true for 465, false for 587
+  port: parseInt(smtpPort),
+  secure: isSecure,
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    pass: process.env.SMTP_PASS?.toString().trim(),
   },
   tls: {
     rejectUnauthorized: false
   },
-  connectionTimeout: 10000, // 10 seconds max wait
-  greetingTimeout: 10000,
-  socketTimeout: 20000
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 30000
 };
 
 const transporter = nodemailer.createTransport(transporterConfig);
