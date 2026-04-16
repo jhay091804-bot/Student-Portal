@@ -141,12 +141,13 @@ app.get('/api/debug/test-email', async (req, res) => {
   
   try {
     const result = await sendVerificationEmail(process.env.SMTP_USER, 'test-connection-token', 'System Admin');
-    if (result) {
-      res.json({ success: true, message: 'Test email sent to ' + process.env.SMTP_USER });
+    if (result.success) {
+      res.json({ success: true, messageId: result.messageId, message: 'Test email successfully sent to ' + process.env.SMTP_USER });
     } else {
       res.status(500).json({ 
-        error: 'Email failed to send. This usually means Port 587 is blocked or Gmail credentials have spaces.',
-        tip: 'Try changing SMTP_PORT to 465 in Railway variables and remove spaces from your password.'
+        error: result.message || 'Unknown Email Failure',
+        code: result.code || 'UNKNOWN',
+        tip: 'If it timed out, try Port 465. If it says Auth Failed, check your Google App Password for typos.'
       });
     }
   } catch (err) {

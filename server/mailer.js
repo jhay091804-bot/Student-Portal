@@ -1,10 +1,6 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Create reusable transporter object
-// Create reusable transporter object
-// Use Port 587 (STARTTLS) which is more reliable in cloud environments
-const transporterConfig = {
 const smtpPort = (process.env.SMTP_PORT || '587').toString().trim();
 const isSecure = smtpPort === '465';
 
@@ -100,12 +96,11 @@ const sendVerificationEmail = async (email, token, name) => {
   try {
     const info = await transporter.sendMail(mailOptions);
     console.log('✅ Real Email Sent: %s', info.messageId);
-    return true;
+    return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('❌ Mailer Error Type:', error.code || 'UNKNOWN');
     console.error('❌ Mailer Error Message:', error.message);
-    if (error.stack) console.error('❌ Mailer Stack Trace:', error.stack);
-    return false;
+    return { success: false, message: error.message, code: error.code };
   }
 };
 
