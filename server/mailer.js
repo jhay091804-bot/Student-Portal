@@ -93,7 +93,9 @@ const sendVerificationEmail = async (email, token, name) => {
     console.log('✅ Real Email Sent: %s', info.messageId);
     return true;
   } catch (error) {
-    console.error('❌ Mailer Error:', error);
+    console.error('❌ Mailer Error Type:', error.code || 'UNKNOWN');
+    console.error('❌ Mailer Error Message:', error.message);
+    if (error.stack) console.error('❌ Mailer Stack Trace:', error.stack);
     return false;
   }
 };
