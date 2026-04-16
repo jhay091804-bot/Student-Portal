@@ -144,7 +144,7 @@ CREATE TABLE organization_members (
 
 -- Seed Initial Admin
 INSERT INTO users (id, password, name, email, role, avatar, is_verified) 
-VALUES ('admin@chcci.edu.ph', '$2a$10$UnIhRoRVOM6pddo6/UZX1ftnv7eA7xKD82b4lvInwfM22pC1', 'System Admin', 'admin@chcci.edu.ph', 'admin', 'https://ui-avatars.com/api/?name=Admin&background=000&color=fff', 1);
+VALUES ('admin@chcci.edu.ph', '$2a$10$/w.yGf39BblKarRH1uQbmOOuyVkRxV233Lh5unem7jBOYDMOS8Sv2', 'System Admin', 'admin@chcci.edu.ph', 'admin', 'https://ui-avatars.com/api/?name=Admin&background=000&color=fff', 1);
 
 -- Seed Initial Organizations
 INSERT INTO organizations (name, description, type, icon, color, members_count) VALUES

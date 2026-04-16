@@ -51,7 +51,7 @@ const initDbMysql = async () => {
         // --- ADMIN REPAIR/SEEDING ---
         // Always run this check after table validation/creation to ensure Admin exists
         const [adminRows] = await connection.query("SELECT * FROM users WHERE id = 'admin@chcci.edu.ph'");
-        const adminHash = '$2a$10$UnIhRoRVOM6pddo6/UZX1ftnv7eA7xKD82b4lvInwfM22pC1'; // Admin123!
+        const adminHash = '$2a$10$/w.yGf39BblKarRH1uQbmOOuyVkRxV233Lh5unem7jBOYDMOS8Sv2'; // Admin123!
         
         if (adminRows.length === 0) {
             console.log('👤 Admin account missing. Seeding System Admin...');
