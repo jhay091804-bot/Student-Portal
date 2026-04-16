@@ -3,28 +3,17 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePortalStore } from '../stores/portalStore';
 import { 
-  GraduationCap, 
-  ShieldCheck, 
-  TrendingUp, 
-  ArrowRight, 
-  CreditCard, 
-  Bell, 
-  Zap,
-  Globe,
-  Lock,
-  User,
-  Eye,
-  EyeOff,
-  Loader2,
-  X,
-  Target,
-  Award,
-  Users,
-  CheckCircle2,
-  BookOpen,
-  Mail,
-  Check,
-  Files
+  Files,
+  Code,
+  Coffee,
+  HeartPulse,
+  Calculator,
+  Shield,
+  Briefcase,
+  Book,
+  Trophy,
+  Compass,
+  Sparkles
 } from 'lucide-vue-next';
 import FloatingChatBot from '../components/FloatingChatBot.vue';
 import SpookyAuth from '../components/SpookyAuth.vue';
@@ -189,6 +178,31 @@ const stats = [
   { label: 'Official Level', value: 'Level III', icon: Award },
   { label: 'National Success', value: '98%', icon: Target }
 ];
+
+const coreValues = [
+  {
+    title: 'Vision',
+    desc: 'To be a leading institution recognized for academic excellence and holistic development, fostering a global community of innovative and ethical leaders.',
+    icon: Trophy,
+    color: 'from-amber-400 to-orange-600'
+  },
+  {
+    title: 'Mission',
+    desc: 'To provide high-quality education through innovative teaching, comprehensive student support, and a commitment to research and service for the youth.',
+    icon: Compass,
+    color: 'from-blue-400 to-indigo-600'
+  }
+];
+
+const programs = [
+  { name: 'BS Computer Science', code: 'BSCS', icon: Code, desc: 'Developing the next generation of software and AI leaders.' },
+  { name: 'BS Information Systems', code: 'BSIS', icon: Globe, desc: 'Bridging technology and business with strategic digital solutions.' },
+  { name: 'BS Computer Engineering', code: 'BSCE', icon: Zap, desc: 'Engineering the hardware and systems that power our future.' },
+  { name: 'BS Nursing', code: 'BSN', icon: HeartPulse, desc: 'Compassionate care backed by clinical excellence and science.' },
+  { name: 'BS Accountancy', code: 'BSA', icon: Calculator, desc: 'Precision and integrity for the global financial landscape.' },
+  { name: 'BS Criminology', code: 'BSCrim', icon: Shield, desc: 'Serving justice and safety with ethics and tactical skill.' },
+  { name: 'BS Education', code: 'BSED', icon: Book, desc: 'Inspiring minds and shaping the future through teaching.' }
+];
 </script>
 
 <template>
@@ -344,6 +358,75 @@ const stats = [
                </span>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Vision & Mission (Split Premium Design) -->
+    <section class="py-24 bg-[#020617] relative overflow-hidden">
+      <!-- Decor -->
+      <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px]"></div>
+      
+      <div class="max-w-7xl mx-auto px-6 relative z-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+           <div v-for="val in coreValues" :key="val.title" class="group relative p-12 rounded-[3rem] glass-card-dark border border-white/5 overflow-hidden transition-all duration-700 hover:scale-[1.02]">
+              <div :class="['absolute top-0 right-0 w-64 h-64 bg-gradient-to-br opacity-5 rounded-bl-[10rem] transition-all group-hover:opacity-10', val.color]"></div>
+              
+              <div :class="['w-20 h-20 rounded-3xl bg-gradient-to-br flex items-center justify-center text-white mb-8 shadow-2xl transition-transform group-hover:rotate-6', val.color]">
+                 <component :is="val.icon" :size="32" />
+              </div>
+              
+              <h4 class="text-4xl font-black text-white mb-6 tracking-tight">{{ val.title }}</h4>
+              <p class="text-lg text-white/50 font-semibold leading-relaxed">{{ val.desc }}</p>
+
+              <div class="mt-12 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">
+                 <Sparkles :size="16" /> Legacy of Excellence
+              </div>
+           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Courses / Programs Showcase (The 7 Pillars) -->
+    <section class="py-32 bg-[#020617] relative">
+      <div class="max-w-7xl mx-auto px-6 text-center">
+        <div class="inline-flex items-center gap-3 px-6 py-2 bg-[#D4AF37]/10 rounded-full border border-[#D4AF37]/20 mb-6">
+           <GraduationCap class="w-4 h-4 text-[#D4AF37]" />
+           <span class="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.3em]">Official Course Offerings</span>
+        </div>
+        <h2 class="text-5xl font-black text-white mb-20 tracking-tighter">Academic Pathways</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+           <div v-for="prog in programs" :key="prog.code" class="group p-8 rounded-[2rem] glass-card-dark border border-white/5 transition-all duration-500 hover:bg-white/5 text-left relative overflow-hidden flex flex-col justify-between min-h-[320px]">
+              <div class="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              
+              <div class="relative z-10">
+                <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-[#D4AF37] mb-8 group-hover:scale-110 group-hover:bg-[#D4AF37] group-hover:text-[#002147] transition-all duration-500">
+                   <component :is="prog.icon" :size="28" />
+                </div>
+                <h4 class="text-xl font-bold text-white mb-3 tracking-tight">{{ prog.name }}</h4>
+                <p class="text-sm text-white/40 font-medium leading-relaxed">{{ prog.desc }}</p>
+              </div>
+
+              <div class="relative z-10 mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+                 <span class="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity">Accredited Program</span>
+                 <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/20 group-hover:text-[#D4AF37]">
+                    <ArrowRight :size="16" />
+                 </div>
+              </div>
+           </div>
+
+           <!-- Large Enroll CTA Card (Fills 7th spot or more) -->
+           <div class="lg:col-span-2 p-12 rounded-[2rem] bg-gradient-to-br from-[#D4AF37] to-[#B8860B] text-[#002147] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group cursor-pointer shadow-2xl shadow-[#D4AF37]/20 hover:-translate-y-2 transition-all" @click="openAuth('register')">
+              <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
+              <div class="relative z-10 text-center md:text-left">
+                 <h4 class="text-4xl font-black tracking-tighter mb-2">Ready to Join Us?</h4>
+                 <p class="text-[11px] font-black uppercase tracking-[0.3em] opacity-80">Online enrollment for A.Y. 2026-2027 is now open.</p>
+              </div>
+              <button class="relative z-10 px-12 py-5 bg-[#002147] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl group-hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
+                 Enroll Now <ArrowRight :size="20" />
+              </button>
+           </div>
         </div>
       </div>
     </section>
