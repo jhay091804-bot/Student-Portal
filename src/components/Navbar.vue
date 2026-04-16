@@ -9,7 +9,12 @@ import {
   LogOut,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Palette,
+  Moon,
+  Leaf,
+  Ghost,
+  Zap
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -25,19 +30,37 @@ const { user, notifications, unreadNotifications } = storeToRefs(store);
 
 const isProfileOpen = ref(false);
 const isNotifOpen = ref(false);
+const isThemeOpen = ref(false);
 
 const toggleProfile = () => {
   isProfileOpen.value = !isProfileOpen.value;
   isNotifOpen.value = false;
+  isThemeOpen.value = false;
 };
 
 const toggleNotifs = () => {
   isNotifOpen.value = !isNotifOpen.value;
   isProfileOpen.value = false;
-  if (isNotifOpen.value) {
-    // Optional: mark as read logic would go here
-  }
+  isThemeOpen.value = false;
 };
+
+const toggleTheme = () => {
+  isThemeOpen.value = !isThemeOpen.value;
+  isProfileOpen.value = false;
+  isNotifOpen.value = false;
+};
+
+const changeTheme = (theme) => {
+  store.setTheme(theme);
+  isThemeOpen.value = false;
+};
+
+const themes = [
+  { id: 'midnight', name: 'Midnight', icon: Moon, color: 'text-slate-900' },
+  { id: 'nature', name: 'Nature', icon: Leaf, color: 'text-green-600' },
+  { id: 'spooky', name: 'Spooky', icon: Ghost, color: 'text-orange-500' },
+  { id: 'metropolis', name: 'Metropolis', icon: Zap, color: 'text-blue-500' }
+];
 
 const markRead = () => {
   store.markNotificationsRead();
@@ -69,6 +92,44 @@ const markRead = () => {
 
     <!-- Right Side: Notifications & Profile -->
     <div class="flex items-center gap-2 sm:gap-4 ml-4">
+      <!-- Theme Switcher -->
+      <div class="relative">
+        <button 
+          @click="toggleTheme"
+          class="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors group"
+          title="Change Theme"
+        >
+          <Palette class="w-5 h-5 group-active:scale-95 transition-transform" />
+        </button>
+
+        <!-- Theme Dropdown -->
+        <div 
+          v-if="isThemeOpen" 
+          class="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+        >
+          <div class="px-4 py-2 border-b border-gray-50">
+            <h4 class="text-xs font-black text-gray-900 uppercase tracking-widest">Select Theme</h4>
+          </div>
+          <div class="p-1">
+            <button 
+              v-for="t in themes" 
+              :key="t.id"
+              @click="changeTheme(t.id)"
+              :class="['w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all', store.theme === t.id ? 'bg-gray-50 font-bold' : 'text-gray-600 hover:bg-gray-50']"
+            >
+              <div :class="['w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100', store.theme === t.id ? t.color : 'text-gray-400']">
+                <component :is="t.icon" class="w-4 h-4" />
+              </div>
+              <span>{{ t.name }}</span>
+              <div v-if="store.theme === t.id" class="ml-auto w-1.5 h-1.5 rounded-full bg-primary"></div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vertical Divider -->
+      <div class="w-px h-8 bg-gray-100 mx-1 hidden sm:block"></div>
+
       <!-- Notification Bell -->
       <div class="relative">
         <button 

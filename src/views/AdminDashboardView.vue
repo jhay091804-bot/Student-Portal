@@ -1,12 +1,12 @@
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import { usePortalStore } from '../stores/portalStore';
 import { useRouter, useRoute } from 'vue-router';
 import { 
   Users, UserPlus, Search, Edit2, Trash2, LogOut, LayoutDashboard, 
   BarChart3, Settings, Bell, Wallet, TrendingUp, ShieldAlert, Save, 
   CheckCircle2, Building2, Megaphone, BookOpen, Loader2, MessageSquare,
-  Send, UserIcon
+  Send, UserIcon, CheckCircle, X, Plus
 } from 'lucide-vue-next';
 import AdminStudentModal from '../components/AdminStudentModal.vue';
 import SkeletonLoader from '../components/SkeletonLoader.vue';
@@ -14,14 +14,12 @@ import SkeletonLoader from '../components/SkeletonLoader.vue';
 const store = usePortalStore();
 const router = useRouter();
 const route = useRoute();
-const currentView = ref(route.query.view || 'dashboard'); // 'dashboard', 'students', 'analytics', 'messages', 'settings'
+const currentView = ref('dashboard'); // 'dashboard', 'students', 'analytics', 'messages', 'settings', 'org_requests'
 const searchQuery = ref('');
 const isModalOpen = ref(false);
 const editingStudent = ref(null);
 const initialTab = ref('info');
 const stats = ref({ totalStudents: 0, totalBalance: 0, programDistribution: [] });
-const settings = ref({ campusName: '', maintenanceMode: false, announcement: '' });
-const isSavingSettings = ref(false);
 const isNotificationOpen = ref(false);
 const isGeneratingReport = ref(false);
 const isLoadingData = ref(true);
@@ -29,6 +27,7 @@ const isLoadingData = ref(true);
 const selectedStudentId = ref(null);
 const adminMessageInput = ref('');
 const chatScroll = ref(null);
+const messageContainer = ref(null);
 let conversationsPoll = null;
 let chatPoll = null;
 
@@ -37,11 +36,15 @@ const notifications = ref([
   { id: 2, title: 'System Alert', message: 'Database backup completed successfully.', time: '1 hour ago', unread: false },
 ]);
 
-onMounted(async () => {
-  await loadAllData();
-  if (currentView.value === 'messages') {
-    startConversationsPolling();
+onMounted(() => {
+  const queryView = route.query.view;
+  const validViews = ['dashboard', 'students', 'analytics', 'messages', 'settings', 'org_requests'];
+  if (queryView && validViews.includes(queryView)) {
+    currentView.value = queryView;
   }
+  loadAllData();
+  startConversationsPolling();
+  store.fetchOrgApplications();
 });
 
 const setView = (v) => {
@@ -53,7 +56,7 @@ const setView = (v) => {
 
 // Sync view with URL query changes
 watch(() => route.query.view, (newView) => {
-  const validViews = ['dashboard', 'students', 'analytics', 'messages', 'settings'];
+  const validViews = ['dashboard', 'students', 'analytics', 'messages', 'settings', 'org_requests'];
   if (newView && validViews.includes(newView)) {
     currentView.value = newView;
   } else if (!newView) {
@@ -72,8 +75,8 @@ watch(currentView, (newView) => {
 
 const startConversationsPolling = () => {
   if (conversationsPoll) return;
-  store.fetchConversations();
-  conversationsPoll = setInterval(() => store.fetchConversations(), 5000);
+  store.fetchMyMessages();
+  conversationsPoll = setInterval(() => store.fetchMyMessages(), 5000);
 };
 
 const stopConversationsPolling = () => {
@@ -100,24 +103,33 @@ const stopChatPolling = () => {
 const fetchChat = async () => {
   if (!selectedStudentId.value) return;
   const oldLength = store.chatMessages.length;
-  await store.fetchStudentChat(selectedStudentId.value);
+  await store.fetchPeerChat(selectedStudentId.value);
   if (store.chatMessages.length > oldLength) {
     scrollToBottom();
   }
 };
 
-const scrollToBottom = async () => {
-  await nextTick();
-  if (chatScroll.value) {
-    chatScroll.value.scrollTop = chatScroll.value.scrollHeight;
+const scrollToBottom = () => {
+  if (messageContainer.value) {
+    setTimeout(() => {
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+    }, 100);
   }
+};
+
+const handleApproveApp = async (appId) => {
+  await store.updateOrgApplicationStatus(appId, 'active');
+};
+
+const handleRejectApp = async (appId) => {
+  await store.updateOrgApplicationStatus(appId, 'rejected');
 };
 
 const handleSendAdminMessage = async () => {
   if (!adminMessageInput.value.trim() || !selectedStudentId.value) return;
   const content = adminMessageInput.value;
   adminMessageInput.value = '';
-  await store.sendToStudent(selectedStudentId.value, content);
+  await store.sendMessage(selectedStudentId.value, content);
   scrollToBottom();
 };
 
@@ -131,12 +143,11 @@ const markAllRead = () => {
   isNotificationOpen.value = false;
 };
 
-const handleGenerateReport = () => {
+const handleGenerateReport = async () => {
   isGeneratingReport.value = true;
-  setTimeout(() => {
-    isGeneratingReport.value = false;
-    alert('Report Generated Successfully');
-  }, 2000);
+  const success = await store.downloadReport();
+  isGeneratingReport.value = false;
+  if (!success) alert('Failed to generate report. Please try again.');
 };
 
 const loadAllData = async () => {
@@ -145,8 +156,7 @@ const loadAllData = async () => {
     await store.fetchStudents();
     const statsData = await store.fetchAdminStats();
     if (statsData) stats.value = statsData;
-    const settingsData = await store.fetchSettings();
-    if (settingsData) settings.value = settingsData;
+    if (statsData) stats.value = statsData;
   } catch (err) {
     console.error('Data Load Error', err);
   } finally {
@@ -180,14 +190,6 @@ const handleDelete = async (id) => {
 
 const handleSignOut = () => {
   store.signOut();
-  router.push({ name: 'home' });
-};
-
-const handleSaveSettings = async () => {
-  isSavingSettings.value = true;
-  await store.updateSettings(settings.value);
-  isSavingSettings.value = false;
-  alert('System settings updated successfully!');
 };
 
 const filteredStudents = computed(() => {
@@ -213,19 +215,19 @@ const getProgramPercentage = (count) => {
         </h1>
         <p class="text-gray-500 mt-1 flex items-center gap-2">
           <Building2 class="w-4 h-4 text-primary" />
-          {{ settings.campusName }} Central Administration
+          Concepcion Holy Cross College Inc. Central Administration
         </p>
       </div>
       
       <!-- Quick Actions / View Switcher (Old School Tabs) -->
       <div class="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
         <button 
-          v-for="v in ['dashboard', 'students', 'analytics', 'messages', 'settings']" 
-          :key="v"
-          @click="setView(v)"
-          :class="['px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap', currentView === v ? 'bg-primary text-white shadow-md' : 'text-gray-400 hover:text-primary']"
+          v-for="view in ['dashboard', 'students', 'analytics', 'messages', 'org_requests', 'settings']" 
+          :key="view"
+          @click="currentView = view"
+          :class="['px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-300', currentView === view ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'text-gray-400 hover:text-gray-900']"
         >
-          {{ v }}
+          {{ view === 'org_requests' ? 'Requests' : view }}
         </button>
       </div>
     </header>
@@ -262,8 +264,12 @@ const getProgramPercentage = (count) => {
           <div class="absolute -right-4 -top-4 w-24 h-24 bg-red-500/5 rounded-full blur-2xl group-hover:bg-red-500/10 transition-colors"></div>
           <div class="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-4 shadow-sm"><ShieldAlert :size="24" /></div>
           <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Critical Average</p>
-          <h3 class="text-3xl font-black text-gray-900 mt-1">3.2</h3>
-          <div class="mt-3 flex items-center gap-2 text-[10px] font-bold text-red-600 bg-red-50 w-fit px-2 py-1 rounded-lg uppercase"><TrendingUp :size="12" /> Alert</div>
+          <h3 class="text-3xl font-black text-gray-900 mt-1">
+            <SkeletonLoader :is-loading="isLoadingData" type="text" class="w-16 h-8 rounded-lg inline-block">
+              {{ stats.criticalAverage || '0.00' }}
+            </SkeletonLoader>
+          </h3>
+          <div class="mt-3 flex items-center gap-2 text-[10px] font-bold text-red-600 bg-red-50 w-fit px-2 py-1 rounded-lg uppercase"><TrendingUp :size="12" /> Grade Alert</div>
         </div>
       </div>
 
@@ -440,6 +446,61 @@ const getProgramPercentage = (count) => {
        </div>
     </div>
 
+    <!-- VIEW: ORG REQUESTS -->
+    <div v-if="currentView === 'org_requests'" class="space-y-6 animate-in slide-in-from-bottom-5 duration-700">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-black text-gray-900 tracking-tight">Organization Requests</h2>
+          <p class="text-sm text-gray-500 font-medium italic">Review and approve student membership applications.</p>
+        </div>
+        <div class="px-4 py-2 bg-primary/10 rounded-xl text-primary font-black text-xs uppercase tracking-widest">
+          {{ store.orgApplications.length }} Pending
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4">
+        <div 
+          v-for="app in store.orgApplications" 
+          :key="app.id"
+          class="bg-white p-6 rounded-[2.5rem] border border-gray-100 card-shadow flex flex-col md:flex-row md:items-center justify-between gap-6 group hover:translate-x-1 transition-all"
+        >
+          <div class="flex items-center gap-5">
+            <div class="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-primary border border-gray-100 shadow-inner group-hover:scale-110 transition-transform">
+              <Users class="w-7 h-7" />
+            </div>
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <h3 class="font-black text-gray-900">{{ app.student_name }}</h3>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{{ app.program }} {{ app.year }}</span>
+              </div>
+              <p class="text-xs text-gray-500 font-medium">Applied to join <span class="text-primary font-bold">{{ app.org_name }}</span></p>
+              <p class="text-[9px] text-gray-300 font-bold uppercase tracking-tighter mt-1">{{ new Date(app.applied_at).toLocaleString() }}</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button 
+              @click="handleRejectApp(app.id)"
+              class="px-6 py-3 rounded-2xl bg-gray-50 text-gray-400 font-black text-[10px] uppercase tracking-widest hover:bg-gray-100 hover:text-gray-600 transition-all active:scale-95"
+            >
+              Reject
+            </button>
+            <button 
+              @click="handleApproveApp(app.id)"
+              class="px-6 py-3 rounded-2xl bg-primary text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 hover:bg-red-800 transition-all active:scale-95"
+            >
+              Approve Membership
+            </button>
+          </div>
+        </div>
+
+        <div v-if="store.orgApplications.length === 0" class="py-20 text-center space-y-4 opacity-30">
+          <CheckCircle class="w-16 h-16 mx-auto" />
+          <p class="text-xl font-bold">All caught up! No pending applications.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- VIEW: MESSAGES (CHAT) -->
     <div v-if="currentView === 'messages'" class="h-[600px] flex gap-6 animate-in fade-in slide-in-from-bottom-4">
       <!-- Conversation Sidebar -->
@@ -495,13 +556,16 @@ const getProgramPercentage = (count) => {
             <div 
               v-for="msg in store.chatMessages" 
               :key="msg.id"
-              :class="['flex', msg.sender_id === 'admin@chcci.edu.ph' ? 'justify-end' : 'justify-start']"
+              :class="['flex', msg.sender_id === store.user.id ? 'justify-end' : 'justify-start']"
             >
-              <div :class="['max-w-[70%] p-4 rounded-2xl text-sm font-medium shadow-sm', msg.sender_id === 'admin@chcci.edu.ph' ? 'bg-primary text-white rounded-tr-none' : 'bg-white text-gray-700 rounded-tl-none border border-gray-100']">
+              <div :class="['max-w-[70%] p-4 rounded-2xl text-sm font-medium shadow-sm', msg.sender_id === store.user.id ? 'bg-primary text-white rounded-tr-none' : 'bg-white text-gray-700 rounded-tl-none border border-gray-100']">
                 {{ msg.content }}
-                <p :class="['text-[8px] mt-1 uppercase font-bold tracking-widest', msg.sender_id === 'admin@chcci.edu.ph' ? 'text-white/60 text-right' : 'text-gray-400']">
-                  {{ formatTime(msg.created_at) }}
-                </p>
+                <div :class="['flex items-center gap-1.5 mt-1 px-2', msg.sender_id === store.user.id ? 'justify-end' : 'justify-start']">
+                  <p :class="['text-[8px] uppercase font-bold tracking-widest', msg.sender_id === store.user.id ? 'text-white/60' : 'text-gray-400']">
+                    {{ formatTime(msg.created_at) }}
+                  </p>
+                  <CheckCheck v-if="msg.sender_id === store.user.id" :class="['w-3 h-3', msg.is_read ? 'text-white' : 'text-white/30']" />
+                </div>
               </div>
             </div>
             <div v-if="store.chatMessages.length === 0" class="flex flex-col items-center justify-center h-full text-center p-8 opacity-20">
@@ -538,53 +602,19 @@ const getProgramPercentage = (count) => {
     </div>
 
     <!-- VIEW: SETTINGS -->
-    <div v-if="currentView === 'settings'" class="max-w-2xl">
-       <section class="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm space-y-8">
+    <div v-if="currentView === 'settings'" class="max-w-2xl animate-in fade-in slide-in-from-bottom-4">
+       <section class="bg-white p-12 rounded-[3rem] border border-gray-100 shadow-xl text-center space-y-6">
+          <div class="w-20 h-20 bg-gray-50 rounded-[2rem] flex items-center justify-center mx-auto text-gray-400">
+             <Settings :size="40" />
+          </div>
           <div>
-            <h3 class="text-xl font-bold text-gray-800 tracking-tight mb-2">System Configuration</h3>
-            <p class="text-sm text-gray-500 font-medium">Manage campus portal settings.</p>
+            <h3 class="text-2xl font-black text-gray-900 tracking-tight">System Settings</h3>
+            <p class="text-gray-500 font-medium max-w-sm mx-auto">Database-driven settings have been disabled for stability. Campus configurations are now managed via the server environment files.</p>
           </div>
-
-          <div class="space-y-6">
-             <div class="space-y-2">
-               <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Campus Name</label>
-               <input v-model="settings.campusName" type="text" class="w-full px-4 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl focus:border-primary outline-none transition-all font-bold text-gray-700 text-sm">
+          <div class="pt-6">
+             <div class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-xl text-amber-700 font-bold text-xs uppercase tracking-widest border border-amber-100">
+                <ShieldAlert :size="14" /> READ-ONLY MODE
              </div>
-
-             <div class="space-y-2">
-               <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Portal Announcement</label>
-               <textarea v-model="settings.announcement" rows="4" class="w-full px-4 py-3 bg-gray-50 border-2 border-gray-50 rounded-2xl focus:border-primary outline-none transition-all font-bold text-gray-700 text-sm custom-scrollbar"></textarea>
-             </div>
-
-             <div class="p-5 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
-               <div class="flex items-center gap-3">
-                  <div :class="['w-10 h-10 rounded-xl flex items-center justify-center text-white', settings.maintenanceMode ? 'bg-primary' : 'bg-green-500']">
-                     <ShieldAlert :size="20" />
-                  </div>
-                  <div>
-                    <p class="font-bold text-gray-800 text-sm">Maintenance Mode</p>
-                    <p class="text-[9px] font-bold text-gray-400 uppercase">Blocks student access</p>
-                  </div>
-               </div>
-               <button 
-                @click="settings.maintenanceMode = !settings.maintenanceMode"
-                :class="['w-12 h-6 rounded-full relative transition-all p-1', settings.maintenanceMode ? 'bg-primary' : 'bg-gray-200']"
-               >
-                  <div :class="['w-4 h-4 bg-white rounded-full transition-all shadow-sm', settings.maintenanceMode ? 'translate-x-6' : 'translate-x-0']"></div>
-               </button>
-             </div>
-          </div>
-
-          <div class="pt-4">
-            <button 
-              @click="handleSaveSettings"
-              :disabled="isSavingSettings"
-              class="w-full bg-primary text-white py-4 rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 hover:bg-red-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Save v-if="!isSavingSettings" :size="18" />
-              <Loader2 v-else class="w-4 h-4 animate-spin" />
-              Save Configurations
-            </button>
           </div>
        </section>
     </div>

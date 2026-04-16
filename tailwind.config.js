@@ -7,9 +7,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#800000", // Maroon for CHCCI
-        secondary: "#FFD700", // Gold accents
-        accent: "#1A237E", // Deep Blue
+        primary: "var(--primary)",
+        secondary: "var(--secondary)",
+        accent: "var(--accent)",
       }
     },
   },

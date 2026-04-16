@@ -57,6 +57,9 @@ const selectConversation = async (id) => {
   showContacts.value = false;
   isLoadingChat.value = true;
   await store.fetchPeerChat(id);
+  // Clear unread locally
+  const conv = store.conversations.find(c => c.id === id);
+  if (conv) conv.unread_count = 0;
   isLoadingChat.value = false;
   scrollToBottom();
 };
@@ -260,7 +263,10 @@ watch(() => store.chatMessages.length, () => {
                     ]"
                   >
                     <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{{ formatTime(msg.created_at) }}</p>
-                    <CheckCheck v-if="msg.sender_id === store.user.id" class="w-3 h-3 text-gray-300" />
+                    <CheckCheck 
+                      v-if="msg.sender_id === store.user.id" 
+                      :class="['w-3 h-3transition-colors', msg.is_read ? 'text-blue-500' : 'text-gray-300']" 
+                    />
                   </div>
                 </div>
               </div>

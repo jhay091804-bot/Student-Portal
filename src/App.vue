@@ -20,6 +20,9 @@ const closeSidebar = () => {
 
 // Handle window resize for sidebar behavior
 onMounted(() => {
+  // Initialize theme from store
+  document.body.className = `theme-${store.theme}`;
+  
   window.addEventListener('resize', () => {
     if (window.innerWidth >= 1024) {
       isSidebarOpen.value = false;
@@ -29,7 +32,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div :class="['flex min-h-screen bg-[#f8fafc] font-sans text-gray-900', !isAuthenticated ? 'w-full' : '', store.isAdmin ? 'selection:bg-primary/20 selection:text-primary' : 'selection:bg-[#002147]/20 selection:text-[#002147]']">
+  <div :class="['flex min-h-screen font-sans text-gray-900', `theme-${store.theme}`, !isAuthenticated ? 'w-full' : '', store.isAdmin ? 'selection:bg-primary/20 selection:text-primary' : 'selection:bg-accent/20 selection:text-accent']" :style="{ backgroundColor: 'var(--bg-main)' }">
     
     <!-- Sidebar (Only if Authenticated) -->
     <Sidebar v-if="isAuthenticated" :is-open="isSidebarOpen" @close="closeSidebar" />

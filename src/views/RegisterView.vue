@@ -156,10 +156,14 @@ const handleRegister = async () => {
                     v-model="form.program"
                     class="w-full bg-white border-2 border-gray-100 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-primary transition-all font-bold text-gray-700 appearance-none"
                   >
-                    <option value="BSCS">BSCS</option>
-                    <option value="BSIT">BSIT</option>
-                    <option value="BSBA">BSBA</option>
-                    <option value="BSED">BSED</option>
+                    <option value="BSCS">BS in Computer Science</option>
+                    <option value="BSIT">BS in Information Technology</option>
+                    <option value="BSHM">BS in Hospitality Management</option>
+                    <option value="BSN">BS in Nursing</option>
+                    <option value="BSA">BS in Accountancy</option>
+                    <option value="BSCrim">BS in Criminology</option>
+                    <option value="BSBA">BS in Business Administration</option>
+                    <option value="BSED">BS in Education</option>
                   </select>
                 </div>
               </div>

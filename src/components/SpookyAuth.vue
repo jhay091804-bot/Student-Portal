@@ -72,19 +72,37 @@ const mouthPath = computed(() => {
 
 const ghostBaseTranslate = computed(() => {
   if (activeField.value === 'password' && showPassword.value) {
-    return 'translate(160px, 45px) rotate(5deg)'; // Peeking a little when password is visible
+    return 'translate(160px, 50px) rotate(5deg)'; // Peeking a little when password is visible
   }
-  return 'translate(150px, 50px) rotate(0deg)'; // Always Centered
+  return 'translate(150px, 55px) rotate(0deg)'; // Centered and lower for talking bubble
+});
+
+const ghostMessage = computed(() => {
+  if (loginStatus.value === 'success') return 'Welcome Home! 🎓';
+  if (loginStatus.value === 'error') return 'Can you please enter your real account? 😢';
+  if (activeField.value === 'id') return 'Typing your Student-ID nice ✨';
+  if (activeField.value === 'password') {
+    return showPassword.value ? 'Can i peek hehe 👀' : 'Its sensitive i will close my eyes 🙈';
+  }
+  return 'Hello! Ready to sign in? 👋';
 });
 </script>
 
 <template>
   <div class="space-y-6 animate-in fade-in duration-500">
     
-    <!-- Ghost Interaction Area (Glass Style) -->
-    <div ref="ghostRef" class="h-40 flex items-center justify-center relative bg-white/5 backdrop-blur-md rounded-3xl overflow-hidden mb-4 shadow-inner border border-white/10">
+    <!-- Ghost Interaction Area (Ultra Compact) -->
+    <div ref="ghostRef" class="h-24 flex items-center justify-center relative bg-white/5 backdrop-blur-md rounded-xl overflow-hidden mb-2 shadow-inner border border-white/10 group/ghost">
        <SkeletonLoader :is-loading="isAuthenticating" type="rect" class="absolute inset-0 z-20" />
-       <svg viewBox="0 0 450 300" class="w-full h-full drop-shadow-2xl scale-90">
+       
+       <!-- Floating Glow Message (Option 3) -->
+       <div class="absolute top-2 left-1/2 -translate-x-1/2 z-30 transition-all duration-700 transform" :class="activeField || loginStatus !== 'idle' ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-4 opacity-0 scale-90'">
+          <div class="text-[#D4AF37] text-[11px] font-black uppercase tracking-[0.2em] drop-shadow-[0_0_12px_rgba(212,175,55,0.8)] whitespace-nowrap text-center px-4 py-2">
+             {{ ghostMessage }}
+          </div>
+       </div>
+
+       <svg viewBox="0 0 450 300" class="w-full h-full drop-shadow-2xl translate-y-4">
           <!-- The Only Ghost (Interactive Peek-a-Boo) -->
           <g class="ghost-float-fast" :style="{ transform: ghostBaseTranslate }">
             <path d="M0,100 Q0,0 75,0 Q150,0 150,100 L150,180 Q150,195 135,195 Q120,195 105,180 Q90,165 75,180 Q60,195 45,180 Q30,165 15,180 Q0,195 0,180 L0,100 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
@@ -94,17 +112,17 @@ const ghostBaseTranslate = computed(() => {
               <template v-if="activeField !== 'password' || showPassword">
                 <!-- Pupils following cursor -->
                 <g :style="{ transform: pupilShift }">
-                   <circle cx="45" cy="80" r="8" fill="#001A4D" />
-                   <circle cx="105" cy="80" r="8" fill="#001A4D" />
+                   <circle cx="45" cy="80" r="8" fill="#0f172a" />
+                   <circle cx="105" cy="80" r="8" fill="#0f172a" />
                 </g>
               </template>
               <template v-else>
-                <path d="M35,80 Q45,90 55,80" fill="none" stroke="#001A4D" stroke-width="4" stroke-linecap="round" />
-                <path d="M95,80 Q105,90 115,80" fill="none" stroke="#001A4D" stroke-width="4" stroke-linecap="round" />
+                <path d="M35,80 Q45,90 55,80" fill="none" stroke="#0f172a" stroke-width="4" stroke-linecap="round" />
+                <path d="M95,80 Q105,90 115,80" fill="none" stroke="#0f172a" stroke-width="4" stroke-linecap="round" />
               </template>
             </g>
 
-            <path :d="mouthPath" fill="none" :stroke="loginStatus === 'success' ? '#0ea5e9' : '#001A4D'" stroke-width="3" stroke-linecap="round" class="eye-transition" />
+            <path :d="mouthPath" fill="none" :stroke="loginStatus === 'success' ? '#0ea5e9' : '#0f172a'" stroke-width="3" stroke-linecap="round" class="eye-transition" />
             
             <circle v-if="loginStatus === 'error'" class="tear-drop" cx="45" cy="95" r="4" fill="#3b82f6" style="animation-delay: 0.5s" />
             <circle v-if="loginStatus === 'error'" class="tear-drop" cx="105" cy="95" r="4" fill="#3b82f6" style="animation-delay: 2.2s" />
@@ -112,8 +130,8 @@ const ghostBaseTranslate = computed(() => {
        </svg>
     </div>
 
-    <!-- Sign In Form -->
-    <div class="space-y-4">
+    <!-- Sign In Form (Compact) -->
+    <div class="space-y-3">
       <div v-if="error" class="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-[10px] font-black uppercase text-center animate-shake border border-red-100">{{ error }}</div>
       
       <div class="space-y-2 text-left">
@@ -126,7 +144,7 @@ const ghostBaseTranslate = computed(() => {
             @blur="activeField = ''"
             type="text" 
             placeholder="e.g., 51762023" 
-            class="w-full bg-white/10 backdrop-blur-md border-2 border-white/5 rounded-2xl py-3.5 pl-11 pr-4 focus:outline-none focus:border-[#D4AF37] font-black text-sm text-white placeholder:text-white/30 transition-all select-none" 
+            class="w-full bg-white/10 backdrop-blur-md border-2 border-white/5 rounded-2xl py-3 pl-11 pr-4 focus:outline-none focus:border-[#D4AF37] font-black text-sm text-white placeholder:text-white/30 transition-all select-none" 
           />
         </div>
       </div>
@@ -141,7 +159,7 @@ const ghostBaseTranslate = computed(() => {
             @blur="activeField = ''"
             :type="showPassword ? 'text' : 'password'" 
             placeholder="••••••••" 
-            class="w-full bg-white/10 backdrop-blur-md border-2 border-white/5 rounded-2xl py-3.5 pl-11 pr-11 focus:outline-none focus:border-[#D4AF37] font-black text-sm text-white placeholder:text-white/30 transition-all font-mono select-none" 
+            class="w-full bg-white/10 backdrop-blur-md border-2 border-white/5 rounded-2xl py-3 pl-11 pr-11 focus:outline-none focus:border-[#D4AF37] font-black text-sm text-white placeholder:text-white/30 transition-all font-mono select-none" 
           />
           <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-4 flex items-center text-white/40 hover:text-[#D4AF37] transition-colors">
             <Eye v-if="!showPassword" :size="18" />
@@ -153,7 +171,7 @@ const ghostBaseTranslate = computed(() => {
       <button 
         @click="handleLogin" 
         :disabled="store.authLoading || loginStatus === 'success'" 
-        class="w-full bg-[#001A4D] hover:bg-[#003366] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.4),0_0_60px_rgba(255,255,255,0.1)] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 border border-white/30"
+        class="w-full bg-[#0f172a] hover:bg-[#1e293b] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.4),0_0_60px_rgba(255,255,255,0.1)] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 border border-white/30"
       >
         <template v-if="!store.authLoading && loginStatus !== 'success'">
           Sign In <ArrowRight :size="16"/>

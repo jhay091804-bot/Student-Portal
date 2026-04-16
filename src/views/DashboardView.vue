@@ -16,6 +16,7 @@ import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { onMounted, ref } from 'vue';
 import SkeletonLoader from '../components/SkeletonLoader.vue';
+import AttendanceHeatmap from '../components/AttendanceHeatmap.vue';
 
 const store = usePortalStore();
 const { user, schedule } = storeToRefs(store);
@@ -173,6 +174,9 @@ const navigateTo = (routeName) => {
         </div>
       </aside>
     </div>
+
+    <!-- Attendance Heatmap Section -->
+    <AttendanceHeatmap :data="store.attendanceData" />
 
     <!-- Wide Announcement Section -->
     <section class="relative bg-accent rounded-3xl p-6 sm:p-8 overflow-hidden card-shadow group">

@@ -87,36 +87,54 @@ const router = createRouter({
       path: '/messages',
       name: 'messages',
       component: () => import('../views/MessagesView.vue'),
-      meta: { requiresAuth: true, role: 'student' }
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/calendar',
+      name: 'calendar',
+      component: () => import('../views/CalendarView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/organizations',
+      name: 'organizations',
+      component: () => import('../views/OrganizationsView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 });
 
-// Navigation Guard
 router.beforeEach((to, from, next) => {
   const store = usePortalStore();
-  
-  if (to.meta.requiresAuth && !store.isAuthenticated) {
-    next({ name: 'login' });
-  } else if (to.meta.guest && store.isAuthenticated) {
-    // Redirect based on role
-    if (store.isAdmin) {
-      next({ name: 'admin' });
-    } else {
-      next({ name: 'dashboard' });
-    }
-  } else if (to.meta.role && store.isAuthenticated) {
-    // Check role access
-    if (to.meta.role === 'admin' && !store.isAdmin) {
-      next({ name: 'dashboard' });
-    } else if (to.meta.role === 'student' && store.isAdmin) {
-      next({ name: 'admin' });
-    } else {
-      next();
-    }
-  } else {
-    next();
+  const isAuthenticated = !!store.user;
+
+  // Sync the store's reactive flag just in case
+  store.isAuthenticated = isAuthenticated;
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    // If trying to access a restricted page without being logged in
+    return next({ name: 'login' });
   }
+
+  if (to.meta.guest && isAuthenticated) {
+    // If logged in but trying to access a guest page (login/landing)
+    if (store.isAdmin) {
+      return next({ name: 'admin' });
+    } else {
+      return next({ name: 'dashboard' });
+    }
+  }
+
+  // Role-based access control
+  if (to.meta.role && isAuthenticated) {
+    if (to.meta.role === 'admin' && !store.isAdmin) {
+      return next({ name: 'dashboard' });
+    } else if (to.meta.role === 'student' && store.isAdmin) {
+      return next({ name: 'admin' });
+    }
+  }
+
+  next();
 });
 
 export default router;

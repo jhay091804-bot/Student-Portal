@@ -26,6 +26,9 @@ const isRefreshing = ref(false);
 const newPostContent = ref('');
 const isSubmittingPost = ref(false);
 const postType = ref('post'); // 'post' or 'announcement'
+const selectedImage = ref(null);
+const imagePreview = ref(null);
+const fileInput = ref(null);
 
 const fetchPosts = async () => {
   isLoading.value = true;
@@ -39,16 +42,43 @@ const refreshPosts = async () => {
   setTimeout(() => isRefreshing.value = false, 500);
 };
 
+const triggerFileInput = () => {
+  fileInput.value.click();
+};
+
+const handleFileSelect = (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+    selectedImage.value = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const removeSelectedImage = () => {
+  selectedImage.value = null;
+  imagePreview.value = null;
+  if (fileInput.value) fileInput.value.value = '';
+};
+
 const handleCreatePost = async () => {
-  if (!newPostContent.value.trim()) return;
+  if (!newPostContent.value.trim() && !selectedImage.value) return;
   
   isSubmittingPost.value = true;
-  const result = await store.createWallPost(newPostContent.value, postType.value);
+  const result = await store.createWallPost(newPostContent.value, postType.value, selectedImage.value);
   
   if (result) {
     posts.value.unshift(result);
     newPostContent.value = '';
-    postType.value = 'post'; // Reset to regular post
+    postType.value = 'post';
+    removeSelectedImage();
   }
   isSubmittingPost.value = false;
 };
@@ -175,12 +205,34 @@ const recentThoughts = computed(() => posts.value.filter(p => p.type === 'post')
               
               <div class="flex items-center justify-between mt-4">
                 <div class="flex items-center gap-2">
-                  <button class="p-2 text-slate-400 hover:text-emerald-500 rounded-xl hover:bg-emerald-50 transition-colors tooltip" title="Add Image">
+                  <input 
+                    type="file" 
+                    ref="fileInput" 
+                    class="hidden" 
+                    accept="image/*" 
+                    @change="handleFileSelect" 
+                  />
+                  <button 
+                    @click="triggerFileInput"
+                    class="p-2 text-slate-400 hover:text-emerald-500 rounded-xl hover:bg-emerald-50 transition-colors tooltip" 
+                    title="Add Image"
+                  >
                     <Image :size="20" />
                   </button>
                   <button class="p-2 text-slate-400 hover:text-amber-500 rounded-xl hover:bg-amber-50 transition-colors tooltip" title="Add Emoji">
                     <Smile :size="20" />
                   </button>
+
+                  <!-- Image Preview -->
+                  <div v-if="imagePreview" class="relative group ml-4 animate-in zoom-in-50 duration-200">
+                    <img :src="imagePreview" class="w-10 h-10 rounded-lg object-cover ring-2 ring-emerald-100" />
+                    <button 
+                      @click="removeSelectedImage"
+                      class="absolute -top-1.5 -right-1.5 bg-red-500 text-white p-0.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Plus :size="10" class="rotate-45" />
+                    </button>
+                  </div>
                   
                   <div v-if="isAdmin" class="ml-2 pl-4 border-l border-slate-100 flex items-center gap-2">
                     <button 
@@ -194,7 +246,7 @@ const recentThoughts = computed(() => posts.value.filter(p => p.type === 'post')
 
                 <button 
                   @click="handleCreatePost"
-                  :disabled="!newPostContent.trim() || isSubmittingPost"
+                  :disabled="(!newPostContent.trim() && !selectedImage) || isSubmittingPost"
                   class="bg-[#002147] text-white px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-[#003366] disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl shadow-[#002147]/10"
                 >
                   <Send v-if="!isSubmittingPost" :size="16" />

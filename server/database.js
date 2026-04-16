@@ -148,6 +148,7 @@ const initDb = () => {
         CREATE TABLE IF NOT EXISTS messages (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           sender_id TEXT NOT NULL,
+          sender_name TEXT,
           receiver_id TEXT NOT NULL,
           content TEXT NOT NULL,
           is_read INTEGER DEFAULT 0,
@@ -155,10 +156,52 @@ const initDb = () => {
           FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
           FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
         )
-      `, (err) => {
-        if (err) reject(err);
-        else resolve();
+      `);
+
+      // Organizations Table
+      db.run(`
+        CREATE TABLE IF NOT EXISTS organizations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT,
+          type TEXT,
+          icon TEXT,
+          color TEXT,
+          members_count INTEGER DEFAULT 0
+        )
+      `);
+
+      // Organization Members Table
+      db.run(`
+        CREATE TABLE IF NOT EXISTS organization_members (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          org_id INTEGER NOT NULL,
+          user_id TEXT NOT NULL,
+          status TEXT DEFAULT 'pending',
+          applied_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+
+      // Seed Initial Organizations
+      db.get("SELECT COUNT(*) as count FROM organizations", (err, row) => {
+        if (row && row.count === 0) {
+          const orgs = [
+            ['Computing Society', 'Official organization for BSCS and BSIT students.', 'Academic', 'Cpu', 'text-blue-600'],
+            ['Literary Club', 'The sanctuary for writers, poets, and storytellers.', 'Special Interest', 'BookOpen', 'text-rose-600'],
+            ['Student Council', 'The central student government of CHCCI.', 'Leadership', 'ShieldCheck', 'text-amber-600'],
+            ['Sports Guild', 'Promoting athleticism and school spirit through competitive sports.', 'Sports', 'Trophy', 'text-emerald-600']
+          ];
+          orgs.forEach(o => {
+            db.run("INSERT INTO organizations (name, description, type, icon, color, members_count) VALUES (?, ?, ?, ?, ?, 0)", o);
+          });
+          console.log('✅ Default organizations seeded');
+        }
       });
+
+      // Complete initialization
+      resolve();
     });
   });
 };

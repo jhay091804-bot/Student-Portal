@@ -9,34 +9,56 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { db: sqliteDb, initDb: initSqlite } = require('./database');
-const { pool, initDbPg } = require('./database_pg');
+const { pool: pgPool, initDbPg } = require('./database_pg');
+const { db: mysqlDb, initDbMysql } = require('./database_mysql');
+const multer = require('multer');
 
 // Database Switching Logic
 const usePg = !!process.env.DATABASE_URL;
+const useMysql = !!(process.env.DB_HOST || process.env.MYSQL_URL);
 let db;
 
 if (usePg) {
   console.log('🐘 PostgreSQL Mode Enabled');
   db = {
     get: (sql, params, cb) => {
+      if (typeof params === 'function') {
+        cb = params;
+        params = [];
+      }
       let i = 1;
       const pgSql = sql.replace(/\?/g, () => `$${i++}`);
-      pool.query(pgSql, params, (err, res) => cb(err, res ? res.rows[0] : null));
+      pgPool.query(pgSql, params, (err, res) => {
+        if (cb) cb(err, res ? res.rows[0] : null);
+      });
     },
     all: (sql, params, cb) => {
+      if (typeof params === 'function') {
+        cb = params;
+        params = [];
+      }
       let i = 1;
       const pgSql = sql.replace(/\?/g, () => `$${i++}`);
-      pool.query(pgSql, params, (err, res) => cb(err, res ? res.rows : []));
+      pgPool.query(pgSql, params, (err, res) => {
+        if (cb) cb(err, res ? res.rows : []);
+      });
     },
     run: (sql, params, cb) => {
+      if (typeof params === 'function') {
+        cb = params;
+        params = [];
+      }
       let i = 1;
       const pgSql = sql.replace(/\?/g, () => `$${i++}`);
-      pool.query(pgSql, params, (err, res) => {
-        const result = { lastID: res?.rows[0]?.id, changes: res?.rowCount };
-        cb.call(result, err);
+      pgPool.query(pgSql, params, (err, res) => {
+        const result = { lastID: res?.rows?.[0]?.id, changes: res?.rowCount };
+        if (cb) cb.call(result, err);
       });
     }
   };
+} else if (useMysql) {
+  console.log('🐬 MySQL Mode Enabled');
+  db = mysqlDb;
 } else {
   console.log('📂 SQLite Mode Enabled');
   db = sqliteDb;
@@ -47,7 +69,7 @@ if (usePg) {
   });
 }
 
-const initDatabase = usePg ? initDbPg : initSqlite;
+const initDatabase = usePg ? initDbPg : (useMysql ? initDbMysql : initSqlite);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,7 +78,9 @@ const SECRET_KEY = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
 // --- SECURITY MIDDLEWARE ---
 
 // Secure HTTP Headers
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // CORS Configuration - Restrict to Frontend
 app.use(cors({
@@ -66,6 +90,25 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Serve Static Uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Multer Storage Configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 // Healthcheck endpoint for Railway
 app.get('/api/health', (req, res) => {
@@ -176,13 +219,15 @@ app.post('/api/auth/register',
       [id, hashedPassword, name, email, 'student', program, year, avatar, 0, verificationToken],
       function(err) {
         if (err) {
-          const isEmailConflict = err.message.includes('email');
-          const isIdConflict = err.message.includes('id');
+          const errMsg = err.message.toLowerCase();
+          const isEmailConflict = errMsg.includes('email') || (errMsg.includes('duplicate entry') && errMsg.includes('email'));
+          const isIdConflict = errMsg.includes('id') || (errMsg.includes('duplicate entry') && (errMsg.includes('primary') || errMsg.includes('id')));
           let message = 'Registration failed. Please check your details.';
           
           if (isEmailConflict) message = 'This email address is already registered.';
           else if (isIdConflict) message = 'This student ID is already registered.';
           
+          console.error('❌ Registration Error:', err.message);
           return res.status(400).json({ error: message, details: err.message });
         }
         
@@ -361,6 +406,7 @@ app.get('/api/wall/posts', authenticateToken, (req, res) => {
       u.avatar as author_avatar, 
       u.role as author_role,
       (SELECT COUNT(*) FROM reactions r WHERE r.post_id = p.id) as reaction_count,
+      (SELECT type FROM reactions r WHERE r.post_id = p.id AND r.user_id = ? LIMIT 1) as user_reaction_type,
       (SELECT 1 FROM reactions r WHERE r.post_id = p.id AND r.user_id = ?) as user_reacted,
       (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count
     FROM posts p
@@ -368,7 +414,7 @@ app.get('/api/wall/posts', authenticateToken, (req, res) => {
     ORDER BY p.type = 'announcement' DESC, p.created_at DESC
   `;
   
-  db.all(query, [userId], (err, rows) => {
+  db.all(query, [userId, userId], (err, rows) => {
     if (err) return res.status(500).json({ error: 'Fetch failed', details: err.message });
     res.json(rows);
   });
@@ -376,12 +422,22 @@ app.get('/api/wall/posts', authenticateToken, (req, res) => {
 
 app.post('/api/wall/posts', 
   authenticateToken, 
-  body('content').trim().notEmpty().escape(),
+  upload.single('image'),
+  body('content').trim().escape(), // Remove .notEmpty() to allow image-only posts
   validate,
   (req, res) => {
-    const { content, type, image_url } = req.body;
+    let { content, type } = req.body;
     const userId = req.user.id;
     const postType = (req.user.role === 'admin' && type === 'announcement') ? 'announcement' : 'post';
+    const image_url = req.file ? `/uploads/${req.file.filename}` : req.body.image_url;
+
+    // Fail-safe: If both content and image are missing, reject
+    if (!content && !image_url) {
+      return res.status(400).json({ error: 'Post must have either text or an image' });
+    }
+
+    // Ensure content is at least an empty string for the DB NOT NULL constraint
+    if (!content) content = '';
 
     db.run(
       "INSERT INTO posts (user_id, content, type, image_url) VALUES (?, ?, ?, ?)",
@@ -399,20 +455,38 @@ app.post('/api/wall/posts',
     );
 });
 
-app.post('/api/wall/posts/:id/react', authenticateToken, (req, res) => {
-  const postId = req.params.id;
+app.post('/api/wall/react', authenticateToken, (req, res) => {
+  const { post_id, comment_id, type } = req.body;
   const userId = req.user.id;
+  const reactionType = type || 'like';
 
-  db.get("SELECT id FROM reactions WHERE post_id = ? AND user_id = ?", [postId, userId], (err, row) => {
+  const targetCol = post_id ? 'post_id' : 'comment_id';
+  const targetId = post_id || comment_id;
+
+  db.get(`SELECT id, type FROM reactions WHERE ${targetCol} = ? AND user_id = ?`, [targetId, userId], (err, row) => {
     if (row) {
-      db.run("DELETE FROM reactions WHERE id = ?", [row.id], (err) => {
-        if (err) return res.status(500).json({ error: 'Reaction removal failed' });
-        res.json({ reacted: false });
-      });
+      if (row.type === reactionType) {
+        // Toggle off if same type
+        db.run("DELETE FROM reactions WHERE id = ?", [row.id], (err) => {
+          if (err) return res.status(500).json({ error: 'Reaction removal failed' });
+          res.json({ reacted: false, type: null });
+        });
+      } else {
+        // Update type if different
+        db.run("UPDATE reactions SET type = ? WHERE id = ?", [reactionType, row.id], (err) => {
+          if (err) return res.status(500).json({ error: 'Reaction update failed' });
+          res.json({ reacted: true, type: reactionType });
+        });
+      }
     } else {
-      db.run("INSERT INTO reactions (post_id, user_id) VALUES (?, ?)", [postId, userId], (err) => {
-        if (err) return res.status(500).json({ error: 'Reaction failed' });
-        res.json({ reacted: true });
+      // Create new reaction
+      const sql = post_id 
+        ? "INSERT INTO reactions (post_id, user_id, type) VALUES (?, ?, ?)"
+        : "INSERT INTO reactions (comment_id, user_id, type) VALUES (?, ?, ?)";
+      
+      db.run(sql, [targetId, userId, reactionType], function(err) {
+        if (err) return res.status(500).json({ error: 'Reaction failed', details: err.message });
+        res.json({ reacted: true, type: reactionType });
       });
     }
   });
@@ -420,24 +494,29 @@ app.post('/api/wall/posts/:id/react', authenticateToken, (req, res) => {
 
 app.get('/api/wall/posts/:id/comments', authenticateToken, (req, res) => {
   const postId = req.params.id;
+  const userId = req.user.id;
   const query = `
-    SELECT c.*, u.name, u.avatar, u.role
+    SELECT 
+      c.*, u.name, u.avatar, u.role,
+      (SELECT COUNT(*) FROM reactions r WHERE r.comment_id = c.id) as reaction_count,
+      (SELECT type FROM reactions r WHERE r.comment_id = c.id AND r.user_id = ? LIMIT 1) as user_reaction_type
     FROM comments c JOIN users u ON c.user_id = u.id
     WHERE c.post_id = ? ORDER BY c.created_at ASC
   `;
-  db.all(query, [postId], (err, rows) => {
+  db.all(query, [userId, postId], (err, rows) => {
     if (err) return res.status(500).json({ error: 'Fetch failed' });
     res.json(rows);
   });
 });
 
-app.post('/api/wall/posts/:id/comments', authenticateToken, body('content').trim().notEmpty().escape(), validate, (req, res) => {
-  const postId = req.params.id;
+app.post('/api/wall/comments', authenticateToken, body('content').trim().notEmpty().escape(), validate, (req, res) => {
+  const { post_id, content, parent_id } = req.body;
   const userId = req.user.id;
-  const { content } = req.body;
-  db.run("INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)", [postId, userId, content], function(err) {
+  
+  db.run("INSERT INTO comments (post_id, user_id, content, parent_id) VALUES (?, ?, ?, ?)", 
+    [post_id, userId, content, parent_id || null], function(err) {
     if (err) return res.status(500).json({ error: 'Comment failed' });
-    db.get("SELECT c.*, u.name, u.avatar, u.role FROM comments c JOIN users u ON c.user_id = u.id WHERE c.id = ?", [this.lastID], (err, row) => {
+    db.get("SELECT c.*, u.name, u.avatar, u.role, 0 as reaction_count FROM comments c JOIN users u ON c.user_id = u.id WHERE c.id = ?", [this.lastID], (err, row) => {
       res.status(201).json(row);
     });
   });
@@ -458,13 +537,24 @@ app.delete('/api/wall/posts/:id', authenticateToken, (req, res) => {
 
 const ADMIN_ID = 'admin@chcci.edu.ph';
 
-// Get available students to chat with (excluding current user)
+// Get available students to chat with (Students only see Admin, Admins see Students)
 app.get('/api/chat/contacts', authenticateToken, (req, res) => {
   const userId = req.user.id;
-  db.all("SELECT id, name, avatar, program, year FROM users WHERE id != ? AND role = 'student' ORDER BY name ASC", [userId], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Fetch contacts failed' });
-    res.json(rows);
-  });
+  const isAdmin = req.user.role === 'admin';
+  
+  if (isAdmin) {
+    // Admins see all students
+    db.all("SELECT id, name, avatar, program, year FROM users WHERE role = 'student' ORDER BY name ASC", [], (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Fetch contacts failed' });
+      res.json(rows);
+    });
+  } else {
+    // Students ONLY see the Admin
+    db.all("SELECT id, name, avatar FROM users WHERE role = 'admin' AND id = ?", [ADMIN_ID], (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Fetch contacts failed' });
+      res.json(rows);
+    });
+  }
 });
 
 // Student: Get messages with a specific person (admin or student)
@@ -483,40 +573,116 @@ app.get('/api/chat/messages/:otherId', authenticateToken, (req, res) => {
   });
 });
 
-// Student: Get all my recent conversations (history)
+// Student/Admin: Get all my recent conversations (history)
 app.get('/api/chat/conversations', authenticateToken, (req, res) => {
   const userId = req.user.id;
-  const query = `
-    SELECT DISTINCT u.id, u.name, u.avatar, u.program, u.year,
-      (SELECT content FROM messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
-      (SELECT created_at FROM messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_at,
-      (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
-    FROM users u
-    JOIN messages m ON (u.id = m.sender_id OR u.id = m.receiver_id)
-    WHERE u.id != ?
-    AND (m.sender_id = ? OR m.receiver_id = ?)
-    ORDER BY last_message_at DESC
-  `;
-  db.all(query, [userId, userId, userId, userId, userId, userId, userId, userId], (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Fetch conversations failed' });
+  const isAdmin = req.user.role === 'admin';
+  
+  let query;
+  let params;
+
+  if (isAdmin) {
+    // Admins see all students who have messaged OR been messaged
+    // Refactored to LEFT JOIN so students with no messages yet still appear if desired, 
+    // but better yet, let's keep it to people with history BUT also provide a way to find students.
+    query = `
+      SELECT u.id, u.name, u.avatar, u.program, u.year,
+        (SELECT content FROM messages WHERE (sender_id = u.id OR receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
+        (SELECT created_at FROM messages WHERE (sender_id = u.id OR receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_at,
+        (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
+      FROM users u
+      WHERE u.role = 'student'
+      AND (
+        EXISTS (SELECT 1 FROM messages WHERE sender_id = u.id OR receiver_id = u.id)
+        OR 1=1 -- Show all students for Admin for now so they can initiate chat
+      )
+      ORDER BY last_message_at DESC, u.name ASC
+    `;
+    params = [userId];
+  } else {
+    // Students ONLY see their conversation with Admin
+    query = `
+      SELECT DISTINCT u.id, u.name, u.avatar, u.program, u.year,
+        (SELECT content FROM messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
+        (SELECT created_at FROM messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_at,
+        (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
+      FROM users u
+      JOIN messages m ON (u.id = m.sender_id OR u.id = m.receiver_id)
+      WHERE u.id = ?
+      AND (m.sender_id = ? OR m.receiver_id = ?)
+      ORDER BY last_message_at DESC
+    `;
+    params = [userId, userId, userId, userId, userId, ADMIN_ID, userId, userId];
+  }
+
+  db.all(query, params, (err, rows) => {
+    if (err) {
+      console.error('Conversations error:', err);
+      return res.status(500).json({ error: 'Fetch conversations failed' });
+    }
     res.json(rows);
   });
 });
 
-// Student: Send message to anyone
+// Student: Send message to anyone (Enforced Admin-only for students)
 app.post('/api/chat/messages', authenticateToken, body('content').trim().notEmpty().escape(), validate, (req, res) => {
   const senderId = req.user.id;
+  const isStudent = req.user.role === 'student';
   const { content, receiver_id } = req.body;
-  const recipient = receiver_id || ADMIN_ID; // Support legacy / admin as default
   
+  // If student, override receiver to ADMIN_ID to be safe
+  const recipient = isStudent ? ADMIN_ID : (receiver_id || null);
+  
+  if (!recipient) return res.status(400).json({ error: 'Receiver ID required' });
+
   db.run(
     "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
     [senderId, recipient, content],
     function(err) {
       if (err) return res.status(500).json({ error: 'Message send failed' });
-      res.status(201).json({ sender_id: senderId, receiver_id: recipient, content, created_at: new Date() });
+      res.status(201).json({ id: this.lastID, sender_id: senderId, receiver_id: recipient, content, created_at: new Date() });
     }
   );
+});
+
+// Mark messages from a specific peer as read
+app.put('/api/chat/messages/read/:peerId', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  const peerId = req.params.peerId;
+  db.run("UPDATE messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ?", [peerId, userId], (err) => {
+    if (err) return res.status(500).json({ error: 'Mark as read failed' });
+    res.json({ success: true });
+  });
+});
+
+// --- CALENDAR EVENTS ---
+
+// Get all events
+app.get('/api/calendar/events', authenticateToken, (req, res) => {
+  db.all("SELECT * FROM events ORDER BY date ASC", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch events failed' });
+    res.json(rows);
+  });
+});
+
+// Admin: Add event
+app.post('/api/calendar/events', authenticateToken, isAdmin, body('title').trim().notEmpty().escape(), body('date').isDate(), validate, (req, res) => {
+  const { title, date, type, color, description } = req.body;
+  db.run("INSERT INTO events (title, date, type, color, description) VALUES (?, ?, ?, ?, ?)",
+    [title, date, type || 'event', color || 'bg-yellow-500', description],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Event creation failed' });
+      res.json({ id: this.lastID, title, date, type, color, description });
+    }
+  );
+});
+
+// Admin: Delete event
+app.delete('/api/calendar/events/:id', authenticateToken, isAdmin, (req, res) => {
+  db.run("DELETE FROM events WHERE id = ?", [req.params.id], (err) => {
+    if (err) return res.status(500).json({ error: 'Event deletion failed' });
+    res.json({ message: 'Event deleted' });
+  });
 });
 
 // Admin: Get list of students who have messaged
@@ -533,6 +699,22 @@ app.get('/api/admin/chat/conversations', authenticateToken, isAdmin, (req, res) 
   `;
   db.all(query, [ADMIN_ID], (err, rows) => {
     if (err) return res.status(500).json({ error: 'Fetch conversations failed' });
+    res.json(rows);
+  });
+});
+
+// Admin: Get all pending applications
+app.get('/api/admin/organizations/applications', authenticateToken, isAdmin, (req, res) => {
+  const query = `
+    SELECT m.id, m.org_id, m.status, m.applied_at, u.name as student_name, u.program, u.year, o.name as org_name
+    FROM organization_members m
+    JOIN users u ON m.user_id = u.id
+    JOIN organizations o ON m.org_id = o.id
+    WHERE m.status = 'pending'
+    ORDER BY m.applied_at DESC
+  `;
+  db.all(query, [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch applications failed' });
     res.json(rows);
   });
 });
@@ -615,33 +797,140 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, (req, res) => {
   const stats = {};
   
   db.get("SELECT COUNT(*) as count FROM users WHERE role = 'student'", (err, row) => {
-    stats.totalStudents = row.count;
+    stats.totalStudents = row ? row.count : 0;
     
     db.get("SELECT SUM(balance) as totalBalance FROM users WHERE role = 'student'", (err, row) => {
-      stats.totalBalance = row.totalBalance || 0;
-      
+      stats.totalBalance = row ? row.totalBalance : 0;
+      stats.criticalAverage = '0.00'; // Reset to static
+
       db.all("SELECT program, COUNT(*) as count FROM users WHERE role = 'student' GROUP BY program", (err, rows) => {
-        stats.programDistribution = rows;
+        stats.programDistribution = rows || [];
         res.json(stats);
       });
     });
   });
 });
 
-// --- ADMIN SETTINGS ---
-let adminSettings = {
-  campusName: 'Concepcion Holy Cross College Inc.',
-  maintenanceMode: false,
-  announcement: 'Reminder: Submission of clearance for the current semester is ongoing.'
-};
+// --- ORGANIZATION ACTIONS ---
 
-app.get('/api/admin/settings', authenticateToken, (req, res) => {
-  res.json(adminSettings);
+// Get all organizations (with status for current user)
+app.get('/api/organizations', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  const query = `
+    SELECT o.*, 
+      (SELECT status FROM organization_members WHERE org_id = o.id AND user_id = ?) as membership_status
+    FROM organizations o
+    ORDER BY o.name ASC
+  `;
+  db.all(query, [userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch organizations failed' });
+    res.json(rows);
+  });
 });
 
-app.post('/api/admin/settings', authenticateToken, isAdmin, (req, res) => {
-  adminSettings = { ...adminSettings, ...req.body };
-  res.json({ message: 'Settings updated successfully', settings: adminSettings });
+// Admin: Create organization
+app.post('/api/organizations', authenticateToken, isAdmin, body('name').trim().notEmpty().escape(), validate, (req, res) => {
+  const { name, description, type, icon, color } = req.body;
+  db.run("INSERT INTO organizations (name, description, type, icon, color, members_count) VALUES (?, ?, ?, ?, ?, 0)",
+    [name, description, type || 'Other', icon || 'MessageCircle', color || 'text-gray-600'],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Org creation failed' });
+      res.json({ id: this.lastID, name, description, type, icon, color, members_count: 0 });
+    }
+  );
+});
+
+// Admin: Delete organization
+app.delete('/api/organizations/:id', authenticateToken, isAdmin, (req, res) => {
+  db.run("DELETE FROM organizations WHERE id = ?", [req.params.id], (err) => {
+    if (err) return res.status(500).json({ error: 'Org deletion failed' });
+    res.json({ message: 'Organization deleted' });
+  });
+});
+
+// --- ORGANIZATION ACTIONS ---
+
+// Get all organizations (with status for current user)
+app.get('/api/organizations', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  const query = `
+    SELECT o.*, 
+      (SELECT status FROM organization_members WHERE org_id = o.id AND user_id = ?) as membership_status
+    FROM organizations o
+    ORDER BY o.name ASC
+  `;
+  db.all(query, [userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch organizations failed' });
+    res.json(rows);
+  });
+});
+
+// Admin: Create organization
+app.post('/api/organizations', authenticateToken, isAdmin, body('name').trim().notEmpty().escape(), validate, (req, res) => {
+  const { name, description, type, icon, color } = req.body;
+  db.run("INSERT INTO organizations (name, description, type, icon, color, members_count) VALUES (?, ?, ?, ?, ?, 0)",
+    [name, description, type || 'Other', icon || 'MessageCircle', color || 'text-gray-600'],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Org creation failed' });
+      res.json({ id: this.lastID, name, description, type, icon, color, members_count: 0 });
+    }
+  );
+});
+
+// Admin: Delete organization
+app.delete('/api/organizations/:id', authenticateToken, isAdmin, (req, res) => {
+  db.run("DELETE FROM organizations WHERE id = ?", [req.params.id], (err) => {
+    if (err) return res.status(500).json({ error: 'Org deletion failed' });
+    res.json({ message: 'Organization deleted' });
+  });
+});
+
+// Student: Apply for organization
+app.post('/api/organizations/:id/apply', authenticateToken, (req, res) => {
+  const orgId = req.params.id;
+  const userId = req.user.id;
+  
+  // Check if already applied
+  db.get("SELECT * FROM organization_members WHERE org_id = ? AND user_id = ?", [orgId, userId], (err, row) => {
+    if (row) return res.status(400).json({ error: 'Application already exists' });
+    
+    db.run("INSERT INTO organization_members (org_id, user_id, status) VALUES (?, ?, 'pending')", [orgId, userId], function(err) {
+      if (err) return res.status(500).json({ error: 'Application failed' });
+      res.json({ message: 'Application submitted' });
+    });
+  });
+});
+
+// Admin: Get all applications
+app.get('/api/admin/organizations/applications', authenticateToken, isAdmin, (req, res) => {
+  const query = `
+    SELECT om.*, u.name as student_name, u.program, u.year, o.name as org_name
+    FROM organization_members om
+    JOIN users u ON om.user_id = u.id
+    JOIN organizations o ON om.org_id = o.id
+    WHERE om.status = 'pending'
+  `;
+  db.all(query, (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch applications failed' });
+    res.json(rows);
+  });
+});
+
+// Admin: Update application status
+app.put('/api/admin/organizations/applications/:id', authenticateToken, isAdmin, (req, res) => {
+  const { status } = req.body;
+  const appId = req.params.id;
+  
+  db.run("UPDATE organization_members SET status = ? WHERE id = ?", [status, appId], function(err) {
+    if (err) return res.status(500).json({ error: 'Update failed' });
+    
+    // If approved, increment member count
+    if (status === 'active') {
+      db.run("UPDATE organizations SET members_count = members_count + 1 WHERE id = (SELECT org_id FROM organization_members WHERE id = ?)", [appId]);
+    }
+    
+    res.json({ message: 'Status updated' });
+  });
 });
 
 // --- AI CHATBOT ENGINE (Fully Real AI Experience) ---

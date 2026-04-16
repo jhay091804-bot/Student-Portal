@@ -221,17 +221,17 @@ const stats = [
     </header>
 
     <!-- Hero Section (Immersive Design) -->
-    <main class="relative min-h-[90vh] flex items-center pt-20 overflow-hidden bg-[#000a1f]">
-      <!-- New Premium Backdrop -->
-      <img src="https://images.unsplash.com/photo-1541339907198-e08756ebafe3?auto=format&fit=crop&q=80&w=2070" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" alt="Campus Backdrop" />
+    <main class="relative min-h-[85vh] flex items-center pt-20 overflow-hidden bg-[#020617]">
+      <!-- New Premium Backdrop (Enhanced Clarity) -->
+      <img src="/campus_generated.png" class="absolute inset-0 w-full h-full object-cover opacity-60" alt="Campus Backdrop" />
       
       <!-- Animated Background Blobs -->
-      <div class="blob w-96 h-96 bg-[#001A4D] top-[-10%] left-[-10%]"></div>
+      <div class="blob w-96 h-96 bg-[#0f172a] top-[-10%] left-[-10%]"></div>
       <div class="blob w-[30rem] h-[30rem] bg-[#D4AF37]/10 bottom-[-20%] right-[-10%]" style="animation-delay: -5s;"></div>
-      <div class="blob w-[40rem] h-[40rem] bg-[#001A4D] top-[20%] right-[10%]" style="animation-delay: -10s;"></div>
+      <div class="blob w-[40rem] h-[40rem] bg-[#0f172a] top-[20%] right-[10%]" style="animation-delay: -10s;"></div>
 
-      <div class="max-w-7xl mx-auto px-6 relative z-10 w-full">
-        <div class="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+      <div class="max-w-7xl mx-auto px-6 relative z-10 w-full pt-10 sm:pt-0">
+        <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
           <!-- Left Content -->
           <div class="flex-1 space-y-10 text-center lg:text-left animate-reveal">
             <div class="inline-flex items-center gap-3 px-5 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10 shadow-2xl">
@@ -239,14 +239,14 @@ const stats = [
               <span class="text-[10px] font-black text-white/80 uppercase tracking-[0.3em]">Licensed & Accredited Institution</span>
             </div>
             
-            <h1 class="text-6xl sm:text-8xl font-black tracking-tighter text-white leading-[0.95]">
+            <h1 class="text-5xl sm:text-7xl font-black tracking-tighter text-white leading-[0.95] font-cursive italic">
               Nurturing <br />
               <span class="text-[#D4AF37] drop-shadow-2xl">Minds.</span><br/>
               Building <br/>
               <span class="text-[#D4AF37] drop-shadow-2xl">Futures.</span>
             </h1>
             
-            <p class="text-xl text-white/50 font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
+            <p class="text-lg text-white/50 font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
               Welcome to the official CHCCI Student Hub. Access your academic records, settle tuition, and stay updated with campus life—all in one secure place.
             </p>
             
@@ -264,25 +264,25 @@ const stats = [
             </div>
           </div>
 
-          <!-- Right Content: Glass Loading Card -->
-          <div class="w-full lg:w-[480px] animate-reveal" style="animation-delay: 0.2s;">
-            <div class="glass-card-dark p-8 sm:p-10 rounded-[3.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-white/5 relative group overflow-hidden">
+          <!-- Right Content: Glass Loading Card (Ultra Compact) -->
+          <div class="w-full lg:w-[360px] animate-reveal" style="animation-delay: 0.2s;">
+            <div class="glass-card-dark p-5 rounded-xl shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] border border-white/5 relative group overflow-hidden">
                <!-- Subtle Grain Effect -->
                <div class="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
                
-              <div class="mb-10 flex items-center justify-between relative z-10">
+              <div class="mb-6 flex items-center justify-between relative z-10">
                 <div>
-                  <h3 class="text-3xl font-black text-white tracking-tight m-0">Portal Login</h3>
-                  <p class="text-[10px] font-bold text-[#D4AF37] uppercase tracking-widest mt-1">Secured by CHCCI Systems</p>
+                  <h3 class="text-2xl font-black text-white tracking-tight m-0">Portal Login</h3>
+                  <p class="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest mt-1">Secured by CHCCI Systems</p>
                 </div>
-                <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-[#D4AF37] shadow-inner">
-                   <Lock :size="24" />
+                <div class="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-[#D4AF37] shadow-inner">
+                   <Lock :size="20" />
                 </div>
               </div>
 
               <SpookyAuth :onSuccess="() => {}" />
 
-              <div class="mt-10 pt-8 border-t border-white/5 text-center relative z-10">
+              <div class="mt-6 pt-6 border-t border-white/5 text-center relative z-10">
                  <p class="text-[11px] font-bold text-white/40 mb-4 uppercase tracking-widest">New Student?</p>
                  <button 
                    @click="openAuth('register')"
@@ -298,9 +298,9 @@ const stats = [
     </main>
 
     <!-- Success Stats Center (Glass Style) -->
-    <section id="stats" class="py-24 bg-[#000a1f] relative overflow-hidden">
+    <section id="stats" class="py-16 bg-[#020617] relative overflow-hidden">
       <div class="max-w-7xl mx-auto px-6">
-        <div class="glass-card rounded-[4rem] p-16 shadow-2xl relative z-10 animate-reveal">
+        <div class="glass-card rounded-2xl p-10 shadow-2xl relative z-10 animate-reveal">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-16">
             <div v-for="stat in stats" :key="stat.label" class="flex flex-col items-center text-center space-y-4">
                <div class="w-20 h-20 rounded-[2rem] bg-white/5 flex items-center justify-center text-[#D4AF37] backdrop-blur-sm shadow-inner transition-transform hover:scale-110">
@@ -317,15 +317,15 @@ const stats = [
     </section>
 
     <!-- Objectives (Satisfying 3D Cards) -->
-    <section id="mission" class="py-32 bg-[#000a1f] text-center relative overflow-hidden [perspective:2000px]">
+    <section id="mission" class="py-32 bg-[#020617] text-center relative overflow-hidden [perspective:2000px]">
        <!-- Decoration -->
        <div class="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
 
       <div class="max-w-7xl mx-auto px-6 relative z-10">
         <h2 class="text-[11px] font-black text-[#D4AF37] uppercase tracking-[0.5em] mb-4">Strategic Framework</h2>
         <h3 class="text-5xl font-black text-white mb-20 tracking-tighter">Campus Objectives</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-          <div v-for="(obj, i) in objectives" :key="obj.title" class="group p-12 rounded-[4rem] glass-card-dark hover:bg-[#002C6A] transition-all duration-700 text-left relative overflow-hidden flex flex-col justify-between min-h-[420px] shadow-2xl hover:-translate-y-6 hover:[transform:rotateX(5deg)_rotateY(2deg)] hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)] animate-reveal" :style="{animationDelay: (i * 0.1) + 's'}">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div v-for="(obj, i) in objectives" :key="obj.title" class="group p-8 rounded-2xl glass-card-dark hover:bg-[#002C6A] transition-all duration-700 text-left relative overflow-hidden flex flex-col justify-between min-h-[400px] shadow-2xl hover:-translate-y-4 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] animate-reveal" :style="{animationDelay: (i * 0.1) + 's'}">
             <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-[8rem] pointer-events-none transition-transform group-hover:scale-125"></div>
             
             <div class="relative z-10 w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-12 shadow-inner group-hover:scale-110 transition-transform border border-white/5">
@@ -362,7 +362,7 @@ const stats = [
         <div @click="showAuthModal = false" class="absolute inset-0 bg-[#002147]/40 backdrop-blur-sm"></div>
         
         <!-- Modal Content -->
-        <div class="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] p-0 overflow-hidden animate-in zoom-in-95">
+        <div class="relative w-full max-w-lg bg-white rounded-2xl shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] p-0 overflow-hidden animate-in zoom-in-95">
           <!-- Close Button -->
           <button @click="showAuthModal = false" class="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 z-50">
             <X :size="24" />
@@ -465,7 +465,14 @@ const stats = [
                     <div class="space-y-1">
                       <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Program</label>
                       <select v-model="registerForm.program" class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl py-2.5 px-3 focus:outline-none focus:border-[#002147] font-bold text-xs">
-                        <option value="BSCS">BSCS</option><option value="BSIT">BSIT</option><option value="BSBA">BSBA</option>
+                        <option value="BSCS">BS in Computer Science</option>
+                        <option value="BSIT">BS in Information Technology</option>
+                        <option value="BSHM">BS in Hospitality Management</option>
+                        <option value="BSN">BS in Nursing</option>
+                        <option value="BSA">BS in Accountancy</option>
+                        <option value="BSCrim">BS in Criminology</option>
+                        <option value="BSBA">BS in Business Administration</option>
+                        <option value="BSED">BS in Education</option>
                       </select>
                     </div>
                     <div class="space-y-1">
@@ -498,7 +505,7 @@ const stats = [
                 </form>
 
                 <div class="text-center">
-                  <button @click="toggleMode" class="text-[10px] font-black text-slate-400 hover:text-[#002147] uppercase tracking-widest transition-colors">Already Enrolled? Sign In</button>
+                  <button @click="showAuthModal = false" class="text-[10px] font-black text-slate-400 hover:text-[#002147] uppercase tracking-widest transition-colors">Already Enrolled? Sign In</button>
                 </div>
               </div>
 
@@ -511,12 +518,12 @@ const stats = [
     <FloatingChatBot />
 
     <!-- Corporate Footer (HCC Style) -->
-    <footer class="py-24 bg-[#001A4D] relative z-10 overflow-hidden">
+    <footer class="py-24 bg-[#0f172a] relative z-10 overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
       <div class="max-w-7xl mx-auto px-6 relative z-10">
         <div class="flex flex-col md:flex-row items-center justify-between gap-12 border-b border-white/10 pb-16 mb-16 px-10">
           <div class="flex items-center gap-6">
-            <div class="w-16 h-16 bg-white rounded-[2rem] flex items-center justify-center text-[#001A4D] font-black text-3xl italic shadow-2xl">C</div>
+            <div class="w-16 h-16 bg-white rounded-[2rem] flex items-center justify-center text-[#0f172a] font-black text-3xl italic shadow-2xl">C</div>
             <div>
                <h4 class="text-white font-black text-2xl uppercase m-0">CHCCI Portal</h4>
                <p class="text-[#D4AF37] text-[10px] font-black uppercase tracking-[0.4em] m-0">Gateway to Excellence</p>

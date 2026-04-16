@@ -1,14 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --hcc-navy: #001A4D;
-  --hcc-gold: #D4AF37;
+  /* Default Midnight Theme */
+  --primary: #800000;
+  --secondary: #FFD700;
+  --accent: #1e293b;
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  background-color: #f8fafc;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+}
+
+/* Nature Theme */
+.theme-nature {
+  --primary: #15803d;
+  --secondary: #fef08a;
+  --accent: #064e3b;
+  --bg-main: #f0fdf4;
+  --bg-card: #ffffff;
+  --text-main: #14532d;
+}
+
+/* Spooky Theme */
+.theme-spooky {
+  --primary: #f97316;
+  --secondary: #7c3aed;
+  --accent: #1e1b4b;
+  --bg-main: #0c0a09;
+  --bg-card: #1c1917;
+  --text-main: #fafaf9;
+  --text-muted: #a8a29e;
+}
+
+/* Metropolis Theme */
+.theme-metropolis {
+  --primary: #2563eb;
+  --secondary: #38bdf8;
+  --accent: #0f172a;
+  --bg-main: #f1f5f9;
+  --bg-card: #ffffff;
+  --text-main: #1e293b;
 }
 
 body {
@@ -51,7 +91,7 @@ button:disabled {
 }
 
 .glass-card-dark {
-  background: rgba(0, 26, 77, 0.6);
+  background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -91,4 +131,9 @@ button:disabled {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.font-cursive {
+  font-family: 'Pacifico', cursive;
+  letter-spacing: normal;
 }

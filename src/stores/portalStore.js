@@ -61,7 +61,18 @@ export const usePortalStore = defineStore('portal', {
     ],
     chatMessages: [],
     conversations: [],
-    contacts: []
+    contacts: [],
+    theme: localStorage.getItem('chcci_theme') || 'midnight',
+    attendanceData: [
+      { date: '2026-03-01', status: 'present' },
+      { date: '2026-03-02', status: 'present' },
+      { date: '2026-03-03', status: 'absent' },
+      { date: '2026-03-04', status: 'present' },
+      // ... more mock data added dynamically via logic if needed
+    ],
+    events: [],
+    organizations: [],
+    orgApplications: [], // For Admin
   }),
   getters: {
     isAdmin: (state) => state.user?.role === 'admin',
@@ -71,7 +82,7 @@ export const usePortalStore = defineStore('portal', {
     formattedBalance: (state) => `₱ ${(state.user?.balance || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
   },
   actions: {
-    // --- CHAT ACTIONS ---
+    // --- CHAT ACTIONS (Unified for Admin & Students) ---
     async fetchMyMessages() {
       try {
         const response = await api.get('/chat/conversations');
@@ -93,9 +104,12 @@ export const usePortalStore = defineStore('portal', {
       }
     },
     async fetchPeerChat(otherId) {
+      if (!otherId) return [];
       try {
         const response = await api.get(`/chat/messages/${otherId}`);
         this.chatMessages = response.data;
+        // Mark as read when opened
+        api.put(`/chat/messages/read/${otherId}`).catch(() => {});
         return response.data;
       } catch (error) {
         console.error('Fetch peer chat failed:', error);
@@ -112,37 +126,13 @@ export const usePortalStore = defineStore('portal', {
         return null;
       }
     },
-    async sendToAdmin(content) {
-      return this.sendMessage(null, content); // Null defaults to admin in backend
-    },
-    async fetchConversations() {
+    async markAsRead(peerId) {
       try {
-        const response = await api.get('/admin/chat/conversations');
-        this.conversations = response.data;
-        return response.data;
+        await api.put(`/chat/messages/read/${peerId}`);
+        const conversation = this.conversations.find(c => c.id === peerId);
+        if (conversation) conversation.unread_count = 0;
       } catch (error) {
-        console.error('Fetch conversations failed:', error);
-        return [];
-      }
-    },
-    async fetchStudentChat(studentId) {
-      try {
-        const response = await api.get(`/admin/chat/messages/${studentId}`);
-        this.chatMessages = response.data;
-        return response.data;
-      } catch (error) {
-        console.error('Fetch student chat failed:', error);
-        return [];
-      }
-    },
-    async sendToStudent(studentId, content) {
-      try {
-        const response = await api.post(`/admin/chat/messages/${studentId}`, { content });
-        this.chatMessages.push(response.data);
-        return response.data;
-      } catch (error) {
-        console.error('Send message to student failed:', error);
-        return null;
+        console.error('Mark read failed:', error);
       }
     },
 
@@ -181,6 +171,9 @@ export const usePortalStore = defineStore('portal', {
       this.user = null;
       localStorage.removeItem('chcci_token');
       localStorage.removeItem('chcci_active_user');
+      
+      // Perform a clean redirect to the landing page to purge all reactive states
+      window.location.href = '/';
     },
     async signUp(userData) {
       this.authLoading = true;
@@ -285,21 +278,31 @@ export const usePortalStore = defineStore('portal', {
         return null;
       }
     },
-    async fetchSettings() {
+    async downloadReport() {
       try {
-        const response = await api.get('/admin/settings');
-        return response.data;
-      } catch (error) {
-        console.error('Fetch settings failed:', error);
-        return null;
-      }
-    },
-    async updateSettings(settings) {
-      try {
-        await api.post('/admin/settings', settings);
+        // Fetch fresh stats
+        const stats = await this.fetchAdminStats();
+        // Create a simple CSV content
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Metric,Value\n";
+        csvContent += `Total Students,${stats.totalStudents}\n`;
+        csvContent += `Total Balance,${stats.totalBalance}\n`;
+        csvContent += `Critical Average,${stats.criticalAverage}\n\n`;
+        csvContent += "Program,Student Count\n";
+        stats.programDistribution.forEach(p => {
+          csvContent += `${p.program},${p.count}\n`;
+        });
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `CHCCI_Campus_Report_${new Date().toLocaleDateString()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         return true;
       } catch (error) {
-        console.error('Update settings failed:', error);
+        console.error('Report generation failed:', error);
         return false;
       }
     },
@@ -384,18 +387,31 @@ export const usePortalStore = defineStore('portal', {
         return [];
       }
     },
-    async createWallPost(content, type = 'post', image_url = null) {
+    async createWallPost(content, type = 'post', imageFile = null) {
       try {
-        const response = await api.post('/wall/posts', { content, type, image_url });
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('type', type);
+        if (imageFile) {
+          formData.append('image', imageFile);
+        }
+        
+        const response = await api.post('/wall/posts', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
         return response.data;
       } catch (error) {
         console.error('Create wall post failed:', error);
         return null;
       }
     },
-    async togglePostReaction(postId) {
+    async togglePostReaction(postId, commentId = null, type = 'like') {
       try {
-        const response = await api.post(`/wall/posts/${postId}/react`);
+        const response = await api.post('/wall/react', { 
+          post_id: postId, 
+          comment_id: commentId, 
+          type 
+        });
         return response.data;
       } catch (error) {
         console.error('Toggle reaction failed:', error);
@@ -411,9 +427,13 @@ export const usePortalStore = defineStore('portal', {
         return [];
       }
     },
-    async addPostComment(postId, content) {
+    async addPostComment(postId, content, parentId = null) {
       try {
-        const response = await api.post(`/wall/posts/${postId}/comments`, { content });
+        const response = await api.post('/wall/comments', { 
+          post_id: postId, 
+          content, 
+          parent_id: parentId 
+        });
         return response.data;
       } catch (error) {
         console.error('Add comment failed:', error);
@@ -428,6 +448,97 @@ export const usePortalStore = defineStore('portal', {
         console.error('Delete post failed:', error);
         return false;
       }
+    },
+    // --- CALENDAR ACTIONS ---
+    async fetchCalendarEvents() {
+      try {
+        const response = await api.get('/calendar/events');
+        this.events = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('Fetch events failed:', error);
+        return [];
+      }
+    },
+    async createCalendarEvent(eventData) {
+      try {
+        const response = await api.post('/calendar/events', eventData);
+        this.events.push(response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Create event failed:', error);
+        return null;
+      }
+    },
+    // --- ORGANIZATION ACTIONS ---
+    async fetchOrganizations() {
+      try {
+        const response = await api.get('/organizations');
+        this.organizations = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('Fetch organizations failed:', error);
+        return [];
+      }
+    },
+    async createOrganization(orgData) {
+      try {
+        const response = await api.post('/organizations', orgData);
+        this.organizations.push(response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Create organization failed:', error);
+        return null;
+      }
+    },
+    async deleteOrganization(id) {
+      try {
+        await api.delete(`/organizations/${id}`);
+        this.organizations = this.organizations.filter(o => o.id !== id);
+        return true;
+      } catch (error) {
+        console.error('Delete organization failed:', error);
+        return false;
+      }
+    },
+    async applyForOrganization(orgId) {
+      try {
+        const response = await api.post(`/organizations/${orgId}/apply`);
+        // Refresh local status
+        await this.fetchOrganizations();
+        return response.data;
+      } catch (error) {
+        console.error('Application failed:', error);
+        return null;
+      }
+    },
+    async fetchOrgApplications() {
+      try {
+        const response = await api.get('/admin/organizations/applications');
+        this.orgApplications = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('Fetch apps failed:', error);
+        return [];
+      }
+    },
+    async updateOrgApplicationStatus(appId, status) {
+      try {
+        await api.post(`/admin/organizations/applications/${appId}/status`, { status });
+        // Refresh list
+        await this.fetchOrgApplications();
+        return true;
+      } catch (error) {
+        console.error('Status update failed:', error);
+        return false;
+      }
+    },
+
+    setTheme(theme) {
+      this.theme = theme;
+      localStorage.setItem('chcci_theme', theme);
+      // We apply to body for global access
+      document.body.className = `theme-${theme}`;
     }
   }
 });

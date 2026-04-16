@@ -30,13 +30,22 @@ const router = useRouter();
 import { computed } from 'vue';
 
 const menuItems = computed(() => {
+  const commonItems = [
+    { name: 'Student Wall', icon: Users, route: 'wall' },
+    { 
+      name: 'Direct Messages', 
+      icon: MessageSquare, 
+      route: store.isAdmin ? 'admin' : 'messages',
+      query: store.isAdmin ? { view: 'messages' } : null 
+    },
+    { name: 'Campus Calendar', icon: Calendar, route: 'calendar' },
+    { name: 'Organizations', icon: Users, route: 'organizations' },
+  ];
+
   const common = [
     {
       category: 'COMMUNITY',
-      items: [
-        { name: 'Student Wall', icon: Users, route: 'wall' },
-        { name: 'Direct Messages', icon: MessageSquare, route: 'messages' },
-      ]
+      items: commonItems
     }
   ];
 
@@ -102,7 +111,6 @@ const bottomItems = [
 const handleAction = (item) => {
   if (item.action === 'logout') {
     store.signOut();
-    router.push({ name: 'home' });
   }
 };
 </script>
