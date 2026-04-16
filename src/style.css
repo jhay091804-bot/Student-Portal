@@ -137,3 +137,36 @@ button:disabled {
   font-family: 'Pacifico', cursive;
   letter-spacing: normal;
 }
+
+/* --- Print Specific Optimizations --- */
+@media print {
+  /* Hide the UI Shell and other screen elements */
+  #app > div:not(.print-container),
+  .sidebar,
+  .navbar,
+  footer,
+  aside,
+  button,
+  nav {
+    display: none !important;
+  }
+
+  /* Ensure the print container is visible and positioned correctly */
+  .print-container, 
+  .print-container * {
+    visibility: visible !important;
+    display: block !important;
+  }
+
+  body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  * {
+    overflow: visible !important;
+    scrollbar-width: none !important;
+    -webkit-print-color-adjust: exact;
+  }
+}

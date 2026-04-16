@@ -4,6 +4,7 @@ import { usePortalStore } from './stores/portalStore';
 import { storeToRefs } from 'pinia';
 import Sidebar from './components/Sidebar.vue';
 import Navbar from './components/Navbar.vue';
+import CORPrintout from './components/CORPrintout.vue';
 
 const store = usePortalStore();
 const { isAuthenticated } = storeToRefs(store);
@@ -65,6 +66,9 @@ onMounted(() => {
       </main>
 
     </div>
+    
+    <!-- Print Optimized Components -->
+    <CORPrintout v-if="isAuthenticated" />
   </div>
 </template>
 

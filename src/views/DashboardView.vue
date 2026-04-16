@@ -10,7 +10,8 @@ import {
   Clock,
   User,
   BookOpen,
-  LayoutDashboard
+  LayoutDashboard,
+  Printer
 } from 'lucide-vue-next';
 import { usePortalStore } from '../stores/portalStore';
 import { storeToRefs } from 'pinia';
@@ -44,12 +45,15 @@ onMounted(async () => {
 const navigateTo = (routeName) => {
   router.push({ name: routeName });
 };
+
+const handlePrintCOR = () => {
+  window.print();
+};
 </script>
 
 <template>
   <div class="p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
     
-    <!-- Mandatory Onboarding for Students -->
     <!-- Mandatory Onboarding for Students -->
     <OnboardingModal v-if="user?.role === 'student' && (!user?.is_onboarded || user?.is_onboarded === 0 || user?.is_onboarded === '0')" />
 
@@ -61,12 +65,17 @@ const navigateTo = (routeName) => {
             Welcome back, <span class="text-primary italic">{{ user?.name || 'Student' }}!</span>
           </SkeletonLoader>
         </h1>
-        <p class="text-gray-500 mt-1 flex items-center gap-2">
-          <BookOpen class="w-4 h-4 text-primary" />
-          <SkeletonLoader :is-loading="isLoading" type="text" class="w-32 h-4 rounded-md">
-            {{ user.program }} - {{ user.year }} (A.Y. 2026-2027)
-          </SkeletonLoader>
-        </p>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
+          <p class="text-gray-500 flex items-center gap-2">
+            <BookOpen class="w-4 h-4 text-primary" />
+            <SkeletonLoader :is-loading="isLoading" type="text" class="w-32 h-4 rounded-md">
+              {{ user.program }} - {{ user.year }} (A.Y. 2026-2027)
+            </SkeletonLoader>
+          </p>
+          <button @click="handlePrintCOR" class="flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary hover:border-primary transition-all shadow-sm">
+            <Printer class="w-3 h-3" /> Print Official COR
+          </button>
+        </div>
       </div>
       <div class="bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
         <div class="text-right">
