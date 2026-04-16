@@ -62,8 +62,8 @@ const initDbMysql = async () => {
             console.log('✅ Default Admin created safely');
         } else {
             console.log('✅ Admin account confirmed in database');
-            // If the old invalid placeholder hash is still there, fix it
-            if (adminRows[0].password.includes('7R9.O.X')) {
+            // If the hash is truncated or invalid (less than 60 chars), fix it immediately
+            if (adminRows[0].password.length < 60) {
                 await connection.query(
                     "UPDATE users SET password = ? WHERE id = 'admin@chcci.edu.ph'",
                     [adminHash]
