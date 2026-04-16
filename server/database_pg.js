@@ -27,6 +27,13 @@ const initDbPg = async () => {
         balance NUMERIC DEFAULT 0.00,
         avatar TEXT,
         is_verified INTEGER DEFAULT 0,
+        is_onboarded INTEGER DEFAULT 0,
+        age INTEGER,
+        religion TEXT,
+        height TEXT,
+        weight TEXT,
+        birthdate DATE,
+        nationality TEXT,
         verification_token TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )

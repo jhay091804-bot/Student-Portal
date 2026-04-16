@@ -39,13 +39,13 @@ onMounted(() => {
     <Sidebar v-if="isAuthenticated" :is-open="isSidebarOpen" @close="closeSidebar" />
 
     <!-- Main Content Area -->
-    <div :class="['flex-1 flex flex-col min-w-0 h-screen overflow-hidden', !isAuthenticated ? 'w-full' : '']">
+    <div :class="['flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative', !isAuthenticated ? 'w-full' : '']">
       
       <!-- Navbar (Only if Authenticated) -->
       <Navbar v-if="isAuthenticated" @toggle-sidebar="toggleSidebar" />
 
       <!-- Scrollable Content -->
-      <main :class="['flex-1 overflow-y-auto custom-scrollbar', isAuthenticated ? 'bg-gray-50/30' : 'bg-white']">
+      <main :class="['flex-1 overflow-y-auto custom-scrollbar relative', isAuthenticated ? 'bg-gray-50/30' : 'bg-white']">
         
         <!-- Transition for Page Navigation -->
         <router-view v-slot="{ Component }">
@@ -58,9 +58,9 @@ onMounted(() => {
         </router-view>
         
         <!-- Footer (Responsive Visibility) -->
-        <footer class="mt-auto px-8 py-6 border-t border-gray-100 bg-white/50 text-center">
-          <p class="text-xs text-gray-400 font-medium tracking-wide">
-            © 2026 CONCEPCION HOLY CROSS COLLEGE INC. (CHCCI) {{ store.isAdmin ? 'ADMIN' : 'STUDENT' }} PORTAL v2.5.0
+        <footer class="mt-auto px-4 sm:px-8 py-6 border-t border-gray-100 bg-white/50 text-center">
+          <p class="text-[10px] sm:text-xs text-gray-400 font-medium tracking-wide leading-relaxed">
+            © 2026 CONCEPCION HOLY CROSS COLLEGE INC. (CHCCI) <span class="block sm:inline">{{ store.isAdmin ? 'ADMIN' : 'STUDENT' }} PORTAL v2.5.0</span>
           </p>
         </footer>
       </main>

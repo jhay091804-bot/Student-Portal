@@ -103,7 +103,34 @@ const reversedFinance = computed(() => {
           </h3>
         </div>
         
-        <div class="flex-1 overflow-y-auto max-h-[400px] custom-scrollbar">
+        <!-- Mobile Card Layout -->
+        <div class="block sm:hidden divide-y divide-gray-50 flex-1 overflow-y-auto max-h-[400px] custom-scrollbar">
+          <div v-for="(entry, idx) in reversedFinance" :key="idx" class="p-6 space-y-3 hover:bg-gray-50 transition-colors">
+            <div class="flex justify-between items-start">
+              <span class="text-[10px] font-mono text-gray-400 uppercase tracking-widest">{{ entry.date }}</span>
+              <span 
+                :class="[
+                  'px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider',
+                  entry.type === 'Payment' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'
+                ]"
+              >
+                {{ entry.type }}
+              </span>
+            </div>
+            <h4 class="text-sm font-bold text-gray-800">{{ entry.description }}</h4>
+            <div class="text-right">
+              <p :class="['text-xl font-black', entry.type === 'Payment' ? 'text-green-600' : 'text-gray-900']">
+                {{ entry.type === 'Payment' ? '-' : '+' }} ₱ {{ entry.amount.toLocaleString() }}
+              </p>
+            </div>
+          </div>
+          <div v-if="reversedFinance.length === 0" class="p-12 text-center text-gray-400 italic text-xs">
+            No transactions found.
+          </div>
+        </div>
+
+        <!-- Desktop Table Wrapper -->
+        <div class="hidden sm:block flex-1 overflow-y-auto max-h-[400px] custom-scrollbar">
           <table class="w-full text-left border-collapse">
             <thead class="bg-gray-50/50 static top-0">
               <tr class="text-[10px] font-bold text-gray-400 uppercase tracking-widest sticky top-0 bg-gray-50">

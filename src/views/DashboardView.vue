@@ -58,32 +58,32 @@ const handlePrintCOR = () => {
     <OnboardingModal v-if="user?.role === 'student' && (!user?.is_onboarded || user?.is_onboarded === 0 || user?.is_onboarded === '0')" />
 
     <!-- Welcome Header -->
-    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-4">
+      <div class="space-y-2">
+        <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-tight">
           <SkeletonLoader :is-loading="isLoading" type="text" class="w-48 h-8 rounded-lg">
-            Welcome back, <span class="text-primary italic">{{ user?.name || 'Student' }}!</span>
+            Welcome back, <span class="text-primary italic">{{ user?.name?.split(' ')[0] || 'Student' }}!</span>
           </SkeletonLoader>
         </h1>
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
-          <p class="text-gray-500 flex items-center gap-2">
-            <BookOpen class="w-4 h-4 text-primary" />
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2 mt-1">
+          <p class="text-[11px] sm:text-sm text-gray-500 font-medium flex items-center gap-2 bg-gray-100/50 px-3 py-1.5 rounded-xl border border-gray-100">
+            <BookOpen class="w-3.5 h-3.5 text-primary" />
             <SkeletonLoader :is-loading="isLoading" type="text" class="w-32 h-4 rounded-md">
-              {{ user.program }} - {{ user.year }} (A.Y. 2026-2027)
+              {{ user.program }} (A.Y. 2026-2027)
             </SkeletonLoader>
           </p>
-          <button @click="handlePrintCOR" class="flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary hover:border-primary transition-all shadow-sm">
-            <Printer class="w-3 h-3" /> Print Official COR
+          <button @click="handlePrintCOR" class="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-primary hover:border-primary transition-all shadow-sm active:scale-95">
+            <Printer class="w-3 h-3" /> COR
           </button>
         </div>
       </div>
-      <div class="bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
-        <div class="text-right">
-          <p class="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Enrolled Status</p>
-          <p class="text-sm font-semibold text-green-600">{{ user.enrolled ? 'FULLY ENROLLED' : 'PENDING' }}</p>
+      <div class="bg-white px-5 py-3 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto self-start sm:self-center">
+        <div class="text-left sm:text-right">
+          <p class="text-[9px] uppercase font-bold text-gray-400 tracking-[0.2em] mb-0.5">Enrollment</p>
+          <p class="text-xs font-black text-green-600">{{ user.enrolled ? 'FULLY ENROLLED' : 'PENDING' }}</p>
         </div>
-        <div class="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-          <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+        <div class="w-10 h-10 rounded-2xl bg-green-50 flex items-center justify-center border border-green-100 shadow-inner">
+          <div class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></div>
         </div>
       </div>
     </header>

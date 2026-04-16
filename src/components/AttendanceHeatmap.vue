@@ -78,11 +78,11 @@ const months = computed(() => {
         </div>
       </div>
       
-      <div class="flex flex-wrap gap-1.5 justify-start">
+      <div class="flex flex-wrap gap-1 sm:gap-1.5 justify-start max-w-full overflow-hidden">
         <div 
           v-for="day in days" 
           :key="day.date"
-          :class="['w-3 h-3 sm:w-4 sm:h-4 rounded-sm transition-all hover:scale-125 cursor-help ring-primary/20 hover:ring-2', getLevelClass(day.status)]"
+          :class="['w-[calc(14.28%-0.25rem)] sm:w-4 sm:h-4 aspect-square rounded-sm transition-all hover:scale-125 cursor-help ring-primary/20 hover:ring-2', getLevelClass(day.status)]"
           :title="`${day.label}: ${day.status}`"
         ></div>
       </div>

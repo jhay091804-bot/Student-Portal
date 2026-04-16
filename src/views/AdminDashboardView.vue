@@ -338,7 +338,47 @@ const getProgramPercentage = (count) => {
         </div>
 
         <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-          <div class="overflow-x-auto">
+          <!-- Mobile Card List -->
+          <div class="sm:hidden divide-y divide-gray-50">
+            <div v-for="student in filteredStudents" :key="student.id" class="p-5 space-y-4 hover:bg-gray-50 transition-all group">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <UserAvatar :name="student.name" :avatar="student.avatar" size="w-12 h-12" role="student" />
+                  <div>
+                    <div class="font-black text-gray-900 leading-tight">{{ student.name }}</div>
+                    <div class="text-[9px] font-bold text-gray-400 font-mono tracking-widest">{{ student.id }}</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Balance</div>
+                  <div :class="['text-sm font-black italic', student.balance > 0 ? 'text-gray-900' : 'text-green-600']">
+                    ₱{{ (student.balance || 0).toLocaleString() }}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between bg-gray-50/50 p-3 rounded-2xl border border-gray-50">
+                <div>
+                  <p class="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Program & Year</p>
+                  <p class="text-xs font-bold text-gray-700">{{ student.program }} • {{ student.year }}</p>
+                </div>
+                <div class="flex gap-1.5 shadow-sm bg-white p-1 rounded-xl border border-gray-100">
+                  <button @click="handleEdit(student, 'subjects')" class="p-2 text-gray-400 hover:text-primary transition-colors">
+                    <BookOpen :size="16" />
+                  </button>
+                  <button @click="handleEdit(student, 'info')" class="p-2 text-gray-400 hover:text-primary transition-colors">
+                    <Edit2 :size="16" />
+                  </button>
+                  <button @click="handleDelete(student.id)" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                    <Trash2 :size="16" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Desktop Table Wrapper -->
+          <div class="hidden sm:block overflow-x-auto">
             <table class="w-full text-left">
               <thead>
                 <tr class="bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
@@ -505,12 +545,18 @@ const getProgramPercentage = (count) => {
       </div>
 
       <!-- VIEW: MESSAGES (CHAT) -->
-      <div v-if="currentView === 'messages'" class="h-[600px] flex gap-6 animate-in fade-in slide-in-from-bottom-4">
-        <!-- Conversation Sidebar -->
-        <aside class="w-full sm:w-1/3 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-          <div class="p-6 border-b border-gray-50">
-            <h3 class="font-bold text-gray-800 tracking-tight">Conversations</h3>
-            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Student Inquiries</p>
+      <div v-if="currentView === 'messages'" class="h-[calc(100vh-200px)] min-h-[500px] flex gap-6 animate-in fade-in slide-in-from-bottom-4 relative">
+        <!-- Conversation Sidebar (Hidden on mobile when chat is open) -->
+        <aside :class="['w-full sm:w-1/3 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col transition-all duration-300', selectedStudentId ? 'hidden sm:flex' : 'flex']">
+          <div class="p-6 border-b border-gray-50 flex justify-between items-center">
+            <div>
+              <h3 class="font-bold text-gray-800 tracking-tight">Conversations</h3>
+              <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Student Inquiries</p>
+            </div>
+            <button @click="loadAllData" class="p-2 hover:bg-gray-50 rounded-lg text-gray-400 hover:text-primary transition-colors">
+              <RefreshCw v-if="isLoadingData" class="w-4 h-4 animate-spin" />
+              <Search v-else class="w-4 h-4" />
+            </button>
           </div>
           <div class="flex-1 overflow-y-auto custom-scrollbar">
             <div 
@@ -530,32 +576,41 @@ const getProgramPercentage = (count) => {
                   <p class="font-bold text-gray-800 text-sm truncate">{{ conv.name }}</p>
                   <span class="text-[8px] font-bold text-gray-400">{{ formatTime(conv.last_message_at) }}</span>
                 </div>
-                <p class="text-xs text-gray-400 truncate">{{ conv.last_message || 'No messages yet' }}</p>
+                <p class="text-xs text-gray-400 truncate font-medium">{{ conv.last_message || 'Start typing...' }}</p>
               </div>
+              <ChevronRight class="w-4 h-4 text-gray-300 sm:hidden" />
             </div>
-            <div v-if="store.conversations.length === 0" class="p-8 text-center opacity-30">
-              <MessageSquare :size="32" class="mx-auto mb-2" />
-              <p class="text-[10px] font-bold uppercase tracking-widest">No conversations</p>
+            <div v-if="store.conversations.length === 0" class="p-12 text-center opacity-30 flex flex-col items-center">
+              <MessageSquare :size="48" class="mb-4" />
+              <p class="text-[10px] font-bold uppercase tracking-widest leading-loose">No active<br>conversations</p>
             </div>
           </div>
         </aside>
 
-        <!-- Chat Window -->
-        <main class="hidden sm:flex flex-1 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex-col">
+        <!-- Chat Window (Full width on mobile when selected) -->
+        <main :class="['flex-1 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col transition-all duration-300', selectedStudentId ? 'flex' : 'hidden sm:flex']">
           <template v-if="selectedStudentId">
             <!-- Chat Header -->
-            <div class="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+            <div class="p-4 sm:p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
                <div class="flex items-center gap-3">
+                 <button @click="selectedStudentId = null" class="sm:hidden p-2 -ml-2 hover:bg-gray-100 rounded-lg text-gray-500">
+                   <ArrowLeft class="w-5 h-5" />
+                 </button>
                  <UserAvatar 
                    :name="store.conversations.find(c => c.id === selectedStudentId)?.name" 
                    :avatar="store.conversations.find(c => c.id === selectedStudentId)?.avatar" 
-                   size="w-10 h-10" 
+                   size="w-9 h-9 sm:w-10 h-10" 
                    role="student" 
                  />
-                 <div>
-                  <p class="font-bold text-gray-800 text-sm">{{ store.conversations.find(c => c.id === selectedStudentId)?.name }}</p>
-                  <p class="text-[9px] font-bold text-primary uppercase tracking-widest">{{ store.conversations.find(c => c.id === selectedStudentId)?.program }} • {{ selectedStudentId }}</p>
+                 <div class="min-w-0">
+                  <p class="font-bold text-gray-800 text-sm truncate">{{ store.conversations.find(c => c.id === selectedStudentId)?.name }}</p>
+                  <p class="text-[9px] font-bold text-primary uppercase tracking-widest truncate">{{ store.conversations.find(c => c.id === selectedStudentId)?.program }} • {{ selectedStudentId }}</p>
                 </div>
+              </div>
+              <div class="flex items-center gap-1 sm:gap-2">
+                <button class="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title="Student Info" @click="handleEdit(store.students.find(s => s.id === selectedStudentId), 'info')">
+                  <UserIcon class="w-4 h-4" />
+                </button>
               </div>
             </div>
 

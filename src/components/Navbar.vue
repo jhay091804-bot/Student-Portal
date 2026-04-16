@@ -106,7 +106,7 @@ const markRead = () => {
         <!-- Theme Dropdown -->
         <div 
           v-if="isThemeOpen" 
-          class="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+          class="absolute right-[-20px] sm:right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
         >
           <div class="px-4 py-2 border-b border-gray-50">
             <h4 class="text-xs font-black text-gray-900 uppercase tracking-widest">Select Theme</h4>
@@ -147,7 +147,7 @@ const markRead = () => {
         <!-- Notifications Dropdown -->
         <div 
           v-if="isNotifOpen" 
-          class="absolute right-0 mt-2 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+          class="absolute right-[-60px] sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-[340px] bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
         >
           <div class="px-4 py-2 border-b border-gray-50 flex items-center justify-between">
             <h4 class="text-xs font-black text-gray-900 uppercase tracking-widest">Notifications</h4>
@@ -203,8 +203,13 @@ const markRead = () => {
         <!-- Profile Dropdown Menu -->
         <div 
           v-if="isProfileOpen" 
-          class="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+          class="absolute right-0 mt-2 w-56 sm:w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
         >
+          <!-- Mobile Profile Info (Visible only on mobile dropdown) -->
+          <div class="px-4 py-3 border-b border-gray-50 flex flex-col sm:hidden mb-2">
+            <span class="text-sm font-bold text-gray-800">{{ user.name }}</span>
+            <span class="text-[10px] font-medium text-gray-400 italic">ID: {{ user.id }}</span>
+          </div>
           <router-link to="/profile" @click="isProfileOpen = false" :class="['w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors', store.isAdmin ? 'hover:text-primary' : 'hover:text-[#002147]']">
             <UserIcon class="w-4 h-4" />
             <span>Profile Settings</span>

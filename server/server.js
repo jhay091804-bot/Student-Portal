@@ -225,7 +225,10 @@ app.post('/api/auth/login',
     const { id, password } = req.body;
     
     db.get("SELECT * FROM users WHERE id = ? OR email = ?", [id, id], (err, user) => {
-      if (err) return res.status(500).json({ error: 'Internal Server Error' });
+      if (err) {
+        console.error('❌ Login DATABASE Error:', err.message);
+        return res.status(500).json({ error: 'Internal Server Error', details: err.message });
+      }
       if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
       // BLOCK UNVERIFIED STUDENTS (Admins are always verified)

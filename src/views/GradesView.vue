@@ -92,8 +92,50 @@ const filteredGrades = computed(() => {
         </div>
       </div>
 
-      <!-- Table Wrapper -->
-      <div class="overflow-x-auto">
+      <!-- Mobile Card Layout -->
+      <div class="block sm:hidden divide-y divide-gray-50">
+        <template v-if="isLoading">
+          <div v-for="i in 3" :key="i" class="p-6 space-y-4">
+            <SkeletonLoader :is-loading="true" type="text" class="w-1/3 h-4" />
+            <SkeletonLoader :is-loading="true" type="text" class="w-full h-6" />
+            <div class="flex justify-between">
+              <SkeletonLoader :is-loading="true" type="text" class="w-1/4 h-4" />
+              <SkeletonLoader :is-loading="true" type="text" class="w-1/4 h-4" />
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <div v-for="grade in filteredGrades" :key="grade.code" class="p-6 space-y-3 hover:bg-gray-50 transition-colors">
+            <div class="flex justify-between items-start">
+              <span class="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/5 px-2 py-1 rounded-md">{{ grade.code }}</span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-50 text-green-600 border border-green-100">
+                {{ grade.status }}
+              </span>
+            </div>
+            <h3 class="font-bold text-gray-900 leading-tight">{{ grade.name }}</h3>
+            <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center gap-4">
+                <div>
+                  <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Units</p>
+                  <p class="text-xs font-bold text-gray-700">{{ grade.units }}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Final Grade</p>
+                <span class="inline-block px-4 py-1.5 bg-primary text-white rounded-xl font-black text-sm shadow-md shadow-primary/20">
+                  {{ grade.grade }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div v-if="filteredGrades.length === 0" class="p-12 text-center text-gray-400 italic text-sm">
+            No matching subjects found.
+          </div>
+        </template>
+      </div>
+
+      <!-- Desktop Table Wrapper -->
+      <div class="hidden sm:block overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="text-xs font-bold text-gray-400 uppercase tracking-widest bg-gray-50/50">
