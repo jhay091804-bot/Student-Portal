@@ -1,26 +1,16 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const smtpPort = (process.env.SMTP_PORT || '587').toString().trim();
-const isSecure = smtpPort === '465';
-
-const transporterConfig = {
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(smtpPort),
-  secure: isSecure,
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS?.toString().trim(),
   },
-  tls: {
-    rejectUnauthorized: false
-  },
   connectionTimeout: 15000,
   greetingTimeout: 15000,
   socketTimeout: 30000
-};
-
-const transporter = nodemailer.createTransport(transporterConfig);
+});
 
 /**
  * Send Verification Email with a premium HTML template
