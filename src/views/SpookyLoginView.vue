@@ -74,12 +74,12 @@ const mouthPath = computed(() => {
     <div class="relative z-10 w-full max-w-5xl animate-in fade-in duration-1000">
       
       <!-- Logo Integration -->
-      <div class="flex items-center justify-center gap-3 mb-8">
-        <div class="w-12 h-12 rounded-2xl bg-[#002147] flex items-center justify-center shadow-lg shadow-[#002147]/40 border border-white/10">
-           <span class="text-white font-black text-2xl italic">C</span>
+      <div class="flex items-center justify-center gap-4 mb-8">
+        <div class="w-14 h-14 rounded-[1.25rem] bg-white p-2 shadow-2xl shadow-primary/20 flex items-center justify-center border border-white/10 overflow-hidden">
+          <img src="/chcci-logo.png" alt="CHCCI Logo" class="w-full h-full object-contain" />
         </div>
         <div class="text-left">
-          <span class="block font-black text-2xl leading-none tracking-tight text-white">CHCCI</span>
+          <span class="block font-black text-3xl leading-none tracking-tight text-white">CHCCI</span>
           <span class="text-[10px] font-bold text-[#D4AF37] tracking-[0.2em] uppercase">Student Portal Hub</span>
         </div>
       </div>

@@ -145,12 +145,15 @@ const isLinkActive = (item) => {
     <div class="h-full flex flex-col">
       <!-- Sidebar Header -->
       <div class="h-16 flex items-center justify-between px-6 border-b border-gray-100">
-        <div class="flex items-center gap-2">
-          <div :class="['w-8 h-8 rounded-lg flex items-center justify-center', store.isAdmin ? 'bg-primary' : 'bg-[#002147]']">
-            <span class="text-white font-bold text-lg">C</span>
+        <router-link :to="{ name: store.isAdmin ? 'admin' : 'dashboard' }" class="flex items-center gap-3 group">
+          <div class="w-10 h-10 rounded-xl overflow-hidden bg-white shadow-sm border border-gray-100 group-hover:scale-105 transition-transform">
+            <img src="/chcci-logo.png" alt="CHCCI Logo" class="w-full h-full object-contain" />
           </div>
-          <span class="font-bold text-sm text-gray-800 leading-tight">CHCCI<br/>{{ store.isAdmin ? 'Admin' : 'Student' }} Portal</span>
-        </div>
+          <div class="flex flex-col">
+            <span class="font-black text-xs text-[#002147] tracking-tight leading-none mb-1">CHCCI</span>
+            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{{ store.isAdmin ? 'Admin' : 'Student' }} Hub</span>
+          </div>
+        </router-link>
         <button @click="emit('close')" class="lg:hidden p-1 rounded-md text-gray-500 hover:bg-gray-100">
           <X class="w-5 h-5" />
         </button>

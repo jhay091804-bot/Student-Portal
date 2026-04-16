@@ -233,8 +233,8 @@ const programs = [
     <header class="fixed top-0 inset-x-0 z-[100] h-20 border-b border-white/10 glass-card-dark">
       <div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-lg transform rotate-3">
-             <span class="text-[#001A4D] font-black text-2xl italic">C</span>
+          <div class="w-12 h-12 rounded-xl bg-white p-2 shadow-lg transform rotate-3 flex items-center justify-center overflow-hidden">
+             <img src="/chcci-logo.png" alt="CHCCI Logo" class="w-full h-full object-contain" />
           </div>
           <div>
             <span class="block font-black text-xl leading-none tracking-tight text-white uppercase">CHCCI</span>
@@ -477,7 +477,9 @@ const programs = [
             <div class="hidden md:flex w-1/3 bg-[#002147] p-10 flex-col justify-between text-white relative overflow-hidden">
                <div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
                <div class="relative z-10">
-                  <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#002147] font-black text-2xl italic mb-8">C</div>
+                  <div class="w-12 h-12 bg-white rounded-xl p-2 flex items-center justify-center shadow-xl overflow-hidden mb-8">
+                    <img src="/chcci-logo.png" alt="CHCCI Logo" class="w-full h-full object-contain" />
+                  </div>
                   <h4 class="text-xl font-black leading-tight tracking-tight mb-4">CHCCI <br/> Academic Portal</h4>
                   <p class="text-xs text-white/50 font-bold leading-relaxed">Nurturing minds, building futures with next-gen digital student services.</p>
                </div>
@@ -627,7 +629,9 @@ const programs = [
       <div class="max-w-7xl mx-auto px-6 relative z-10">
         <div class="flex flex-col md:flex-row items-center justify-between gap-12 border-b border-white/10 pb-16 mb-16 px-10">
           <div class="flex items-center gap-6">
-            <div class="w-16 h-16 bg-white rounded-[2rem] flex items-center justify-center text-[#0f172a] font-black text-3xl italic shadow-2xl">C</div>
+            <div class="w-16 h-16 bg-white rounded-[2rem] p-3 flex items-center justify-center shadow-2xl overflow-hidden">
+               <img src="/chcci-logo.png" alt="CHCCI Logo" class="w-full h-full object-contain" />
+            </div>
             <div>
                <h4 class="text-white font-black text-2xl uppercase m-0">CHCCI Portal</h4>
                <p class="text-[#D4AF37] text-[10px] font-black uppercase tracking-[0.4em] m-0">Gateway to Excellence</p>

@@ -47,13 +47,13 @@ const goToLogin = () => {
     <div class="w-full max-w-lg">
       
       <!-- Logo Header -->
-      <div class="flex items-center justify-center gap-3 mb-12 animate-in fade-in slide-in-from-top-4 duration-1000">
-        <div class="w-12 h-12 rounded-xl bg-[#002147] flex items-center justify-center shadow-lg">
-          <GraduationCap class="w-7 h-7 text-white" />
+      <div class="flex items-center justify-center gap-4 mb-12 animate-in fade-in slide-in-from-top-4 duration-1000">
+        <div class="w-14 h-14 rounded-2xl bg-white p-2 shadow-xl border border-slate-100 overflow-hidden flex items-center justify-center">
+          <img src="/chcci-logo.png" alt="CHCCI Logo" class="w-full h-full object-contain" />
         </div>
         <div>
-          <span class="block font-black text-xl tracking-tight text-[#002147]">CHCCI</span>
-          <span class="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Student Portal</span>
+          <span class="block font-black text-2xl tracking-tight text-[#002147]">CHCCI</span>
+          <span class="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Student Portal Hub</span>
         </div>
       </div>
 
