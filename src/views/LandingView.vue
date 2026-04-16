@@ -203,13 +203,19 @@ const stats = [
 const coreValues = [
   {
     title: 'Vision',
-    desc: 'To be a leading institution recognized for academic excellence and holistic development, fostering a global community of innovative and ethical leaders.',
+    desc: 'Concepcion Holy Cross College is an institution for academic and values formation offering relevant, learner centered and values oriented programs that produces competent persons of character in the service of society.',
     icon: Trophy,
     color: 'from-amber-400 to-orange-600'
   },
   {
     title: 'Mission',
-    desc: 'To provide high-quality education through innovative teaching, comprehensive student support, and a commitment to research and service for the youth.',
+    desc: 'To become a God-centered learning institution focused on holistic education that forms and educates individual to become concencious, competent, compassionate and committed persons towards the development of a just and humane society.',
+    icon: Compass,
+    color: 'from-blue-400 to-indigo-600'
+  },
+   {
+    title: 'Hymm',
+    desc: 'For once for all, We are rallying together Behind you Alma Matter dear who has elevated knowledge to us Inspiring us to sublimate your name We students and alumni Wherever we may be Near or far well always be loyal and ready to heed the call for in the hall of Holy Cross College are knowledge and love for God and country Radiates its light to our Alma Matter dear that guides as through the years.',
     icon: Compass,
     color: 'from-blue-400 to-indigo-600'
   }
