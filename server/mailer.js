@@ -15,7 +15,9 @@ const sendVerificationEmail = async (email, token, name) => {
     accessToken: process.env.EMAILJS_PRIVATE_KEY,
     template_params: {
       user_name: name,
+      name: name,
       user_email: email,
+      email: email,
       verification_link: verificationLink
     }
   };
