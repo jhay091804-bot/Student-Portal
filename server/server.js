@@ -125,7 +125,25 @@ const upload = multer({
 
 // Healthcheck endpoint for Railway
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'healthy', timestamp: new Date() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    database: process.env.MYSQL_URL ? 'MySQL' : 'SQLite',
+    smtp: process.env.SMTP_USER && process.env.SMTP_PASS ? 'Configured' : 'Missing Credentials'
+  });
+});
+
+// DEBUG: Test Email Connection
+app.get('/api/debug/test-email', async (req, res) => {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    return res.status(500).json({ error: 'SMTP credentials not set in environment variables' });
+  }
+  const result = await sendVerificationEmail(process.env.SMTP_USER, 'test-connection-token', 'System Admin');
+  if (result) {
+    res.json({ success: true, message: 'Test email sent to ' + process.env.SMTP_USER });
+  } else {
+    res.status(500).json({ error: 'Email failed. Check Railway server logs for the full stack trace.' });
+  }
 });
 
 // Serve Static Frontend (ONLY in Production)
