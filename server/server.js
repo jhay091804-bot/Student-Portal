@@ -157,7 +157,16 @@ app.get('/api/debug/test-email', async (req, res) => {
 
 // Serve Static Frontend (ONLY in Production)
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
+  const distPath = path.resolve(__dirname, '..', 'dist');
+  app.use(express.static(distPath));
+  
+  // SPA Fallback: Serve index.html for any unknown routes
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
 }
 
 // Rate Limiting - Prevent DDoS/Brute Force
