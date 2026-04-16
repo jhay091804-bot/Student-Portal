@@ -157,7 +157,6 @@ const handleRegister = async () => {
                     class="w-full bg-white border-2 border-gray-100 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-primary transition-all font-bold text-gray-700 appearance-none"
                   >
                     <option value="BSCS">BS in Computer Science</option>
-                    <option value="BSIT">BS in Information Technology</option>
                     <option value="BSHM">BS in Hospitality Management</option>
                     <option value="BSN">BS in Nursing</option>
                     <option value="BSA">BS in Accountancy</option>

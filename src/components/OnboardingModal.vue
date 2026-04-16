@@ -63,7 +63,6 @@ const handleSubmit = async () => {
 
 const programs = [
   'BS Computer Science',
-  'BS Information Technology',
   'BS Information Systems',
   'BS Computer Engineering',
   'Bachelor of Secondary Education',
