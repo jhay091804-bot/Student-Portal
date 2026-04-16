@@ -2,6 +2,7 @@
 import { User, Mail, Phone, MapPin, Edit3, Save, Camera, GraduationCap, Calendar, ShieldCheck } from 'lucide-vue-next';
 import { usePortalStore } from '../stores/portalStore';
 import { ref, reactive } from 'vue';
+import UserAvatar from '../components/UserAvatar.vue';
 
 const store = usePortalStore();
 const isEditing = ref(false);
@@ -43,8 +44,14 @@ const saveProfile = async () => {
           <div class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent h-1/2"></div>
           
           <div class="relative w-32 h-32 mx-auto mb-6">
-            <img :src="profileForm.avatar" class="w-full h-full rounded-full object-cover border-4 border-white shadow-lg" alt="Profile" />
-            <button v-if="isEditing" class="absolute bottom-1 right-1 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white hover:scale-110 transition-transform">
+             <UserAvatar 
+              :name="profileForm.name" 
+              :avatar="profileForm.avatar" 
+              size="w-32 h-32" 
+              :role="store.isAdmin ? 'admin' : 'student'"
+              class="border-4 border-white shadow-lg mx-auto"
+            />
+            <button v-if="isEditing" class="absolute bottom-1 right-1 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center shadow-lg border-2 border-white hover:scale-110 transition-transform z-10">
               <Camera class="w-4 h-4" />
             </button>
           </div>

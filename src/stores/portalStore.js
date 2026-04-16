@@ -75,7 +75,22 @@ export const usePortalStore = defineStore('portal', {
     orgApplications: [], // For Admin
   }),
   getters: {
+    isAuthenticated: (state) => !!state.user,
     isAdmin: (state) => state.user?.role === 'admin',
+    getInitials: () => (name) => {
+      if (!name) return '??';
+      const cleanName = name.trim();
+      const parts = cleanName.split(/\s+/);
+      if (parts.length > 1) {
+        // First letter of first word + first letter of last word
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      // First two letters of single word
+      return cleanName.substring(0, 2).toUpperCase();
+    },
+    userInitials: (state, getters) => {
+      return getters.getInitials(state.user?.name);
+    },
     unreadNotifications: (state) => state.notifications.filter(n => !n.read).length,
     unreadMessages: (state) => state.conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0),
     totalUnits: (state) => state.grades.reduce((acc, curr) => acc + curr.units, 0),

@@ -20,6 +20,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePortalStore } from '../stores/portalStore';
 import { storeToRefs } from 'pinia';
+import UserAvatar from './UserAvatar.vue';
 
 const router = useRouter();
 
@@ -190,9 +191,12 @@ const markRead = () => {
             <span class="text-sm font-semibold text-gray-800">{{ user.name }}</span>
             <span class="text-[10px] font-medium text-gray-400">{{ store.isAdmin ? 'Admin' : 'Student' }} ID: {{ user.id }}</span>
           </div>
-          <div :class="['w-9 h-9 rounded-full flex items-center justify-center overflow-hidden border', store.isAdmin ? 'bg-primary/10 border-primary/20' : 'bg-[#002147]/10 border-[#002147]/20']">
-            <img :src="user.avatar" alt="User" class="w-full h-full object-cover" />
-          </div>
+          <UserAvatar 
+            :name="user.name" 
+            :avatar="user.avatar" 
+            size="w-9 h-9" 
+            :role="store.isAdmin ? 'admin' : 'student'" 
+          />
           <ChevronDown :class="['w-4 h-4 text-gray-400 transition-transform duration-200', isProfileOpen ? 'rotate-180' : '']" />
         </button>
 

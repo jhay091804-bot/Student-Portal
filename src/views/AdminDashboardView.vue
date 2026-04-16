@@ -10,6 +10,7 @@ import {
 } from 'lucide-vue-next';
 import AdminStudentModal from '../components/AdminStudentModal.vue';
 import SkeletonLoader from '../components/SkeletonLoader.vue';
+import UserAvatar from '../components/UserAvatar.vue';
 
 const store = usePortalStore();
 const router = useRouter();
@@ -288,7 +289,9 @@ const getProgramPercentage = (count) => {
                 </template>
                 <div v-else v-for="s in store.students.slice(0, 4)" :key="s.id" class="flex items-center justify-between p-3 bg-gray-50/50 rounded-2xl border border-gray-50 group hover:bg-white hover:border-primary/20 transition-all">
                   <div class="flex items-center gap-3">
-                     <img :src="s.avatar" class="w-10 h-10 rounded-xl shadow-sm" alt="">
+                   <div class="relative">
+                      <UserAvatar :name="s.name" :avatar="s.avatar" size="w-10 h-10" role="student" />
+                   </div>
                     <div>
                       <p class="font-bold text-gray-800 text-sm group-hover:text-primary transition-colors">{{ s.name }}</p>
                       <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{{ s.program }} • {{ s.id }}</p>
@@ -349,7 +352,7 @@ const getProgramPercentage = (count) => {
                 <tr v-for="student in filteredStudents" :key="student.id" class="hover:bg-gray-50/50 transition-all group">
                   <td class="px-6 py-5">
                     <div class="flex items-center gap-3">
-                      <img :src="student.avatar" class="w-10 h-10 rounded-xl shadow-sm" alt="">
+                     <UserAvatar :name="student.name" :avatar="student.avatar" size="w-10 h-10" role="student" />
                       <div>
                         <div class="font-bold text-gray-800 text-sm group-hover:text-primary transition-colors">{{ student.name }}</div>
                         <div class="text-[9px] font-bold text-gray-400 font-mono tracking-widest">{{ student.id }}</div>
@@ -516,9 +519,9 @@ const getProgramPercentage = (count) => {
               @click="startChatPolling(conv.id)"
               :class="['p-4 flex items-center gap-3 cursor-pointer transition-all hover:bg-gray-50 border-b border-gray-50', selectedStudentId === conv.id ? 'bg-primary/5 border-l-4 border-l-primary' : '']"
             >
-              <div class="relative">
-                <img :src="conv.avatar" class="w-10 h-10 rounded-xl" alt="">
-                <span v-if="conv.unread_count > 0" class="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white">
+               <div class="relative">
+                 <UserAvatar :name="conv.name" :avatar="conv.avatar" size="w-10 h-10" role="student" />
+                 <span v-if="conv.unread_count > 0" class="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white">
                   {{ conv.unread_count }}
                 </span>
               </div>
@@ -542,9 +545,14 @@ const getProgramPercentage = (count) => {
           <template v-if="selectedStudentId">
             <!-- Chat Header -->
             <div class="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
-              <div class="flex items-center gap-3">
-                <img :src="store.conversations.find(c => c.id === selectedStudentId)?.avatar" class="w-10 h-10 rounded-xl shadow-sm" alt="">
-                <div>
+               <div class="flex items-center gap-3">
+                 <UserAvatar 
+                   :name="store.conversations.find(c => c.id === selectedStudentId)?.name" 
+                   :avatar="store.conversations.find(c => c.id === selectedStudentId)?.avatar" 
+                   size="w-10 h-10" 
+                   role="student" 
+                 />
+                 <div>
                   <p class="font-bold text-gray-800 text-sm">{{ store.conversations.find(c => c.id === selectedStudentId)?.name }}</p>
                   <p class="text-[9px] font-bold text-primary uppercase tracking-widest">{{ store.conversations.find(c => c.id === selectedStudentId)?.program }} • {{ selectedStudentId }}</p>
                 </div>

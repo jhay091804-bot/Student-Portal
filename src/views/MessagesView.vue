@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   Loader2
 } from 'lucide-vue-next';
+import UserAvatar from '../components/UserAvatar.vue';
 
 const store = usePortalStore();
 const activeConversationId = ref(null);
@@ -182,11 +183,11 @@ watch(() => store.chatMessages.length, () => {
                 activeConversationId === conv.id ? (store.isAdmin ? 'bg-primary/5 border-l-4 border-l-primary' : 'bg-[#002147]/5 border-l-4 border-l-[#002147]') : 'hover:bg-gray-50'
               ]"
             >
-              <div class="relative flex-shrink-0">
-                <img :src="conv.avatar" class="w-12 h-12 rounded-2xl object-cover shadow-sm" />
-                <div v-if="conv.unread_count > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-xl flex items-center justify-center border-2 border-white">
+              <div class="relative">
+                <UserAvatar :name="conv.name" :avatar="conv.avatar" size="w-10 h-10" role="student" />
+                <span v-if="conv.unread_count > 0" class="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                   {{ conv.unread_count }}
-                </div>
+                </span>
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex justify-between items-baseline mb-0.5">

@@ -15,6 +15,7 @@ import {
 } from 'lucide-vue-next';
 import { usePortalStore } from '../stores/portalStore';
 import ReactionPicker from './ReactionPicker.vue';
+import UserAvatar from './UserAvatar.vue';
 
 const props = defineProps({
   post: { type: Object, required: true }
@@ -194,10 +195,13 @@ const sharePost = () => {
     <div class="p-5 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="relative">
-          <img :src="post.author_avatar" class="w-11 h-11 rounded-2xl object-cover ring-2 ring-slate-50" />
-          <div v-if="post.author_role === 'admin'" class="absolute -bottom-1 -right-1 bg-blue-500 text-white p-0.5 rounded-full ring-2 ring-white">
-            <CheckCircle :size="10" fill="currentColor" class="text-white" />
-          </div>
+          <UserAvatar 
+            :name="post.author_name" 
+            :avatar="post.author_avatar" 
+            size="w-11 h-11" 
+            :role="post.author_role === 'admin' ? 'admin' : 'student'" 
+            badge
+          />
         </div>
         <div>
           <div class="flex items-center gap-2">
@@ -290,7 +294,7 @@ const sharePost = () => {
         <div v-for="comment in rootComments" :key="comment.id" class="space-y-4">
           <!-- Main Comment -->
           <div class="flex gap-2 group/comment">
-            <img :src="comment.avatar" class="w-8 h-8 rounded-full object-cover shrink-0 ring-2 ring-white shadow-sm" />
+            <UserAvatar :name="comment.name" :avatar="comment.avatar" size="w-8 h-8 rounded-full" />
             <div class="flex-1 max-w-[85%]">
               <div class="bg-slate-100/80 px-4 py-2.5 rounded-2xl rounded-tl-none relative group/bubble hover:bg-slate-100 transition-colors">
                 <h5 class="text-[11px] font-black text-[#002147] mb-0.5">{{ comment.name }}</h5>
@@ -328,7 +332,7 @@ const sharePost = () => {
               <!-- Replies -->
               <div v-if="getReplies(comment.id).length > 0" class="mt-3 space-y-3 pl-2 border-l-2 border-slate-200/50 ml-1">
                  <div v-for="reply in getReplies(comment.id)" :key="reply.id" class="flex gap-2">
-                    <img :src="reply.avatar" class="w-6 h-6 rounded-full object-cover shrink-0 ring-1 ring-white" />
+                    <UserAvatar :name="reply.name" :avatar="reply.avatar" size="w-6 h-6 rounded-full" />
                     <div class="flex-1 max-w-[90%]">
                        <div class="bg-slate-100/60 px-3 py-2 rounded-xl rounded-tl-none">
                           <h5 class="text-[10px] font-black text-[#002147] mb-0.5">{{ reply.name }}</h5>
@@ -367,7 +371,7 @@ const sharePost = () => {
 
       <!-- Add Comment -->
       <div class="flex items-center gap-3 pt-2">
-        <img :src="store.user?.avatar || 'https://ui-avatars.com/api/?name=User'" class="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm" />
+        <UserAvatar :name="store.user?.name" :avatar="store.user?.avatar" size="w-8 h-8 rounded-full" />
         <div class="flex-1 relative">
           <input 
             v-model="newComment"
