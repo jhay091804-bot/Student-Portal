@@ -71,7 +71,23 @@ const initDbMysql = async () => {
                 console.log('🔄 Default Admin password hash repaired successfully');
             }
 
-            // ADD COLUMN REPAIR: Ensure is_onboarded exists for existing users
+            // ADD COLUMN REPAIR: Ensure personal stats exist for existing users
+            const statsColumns = [
+                "age INT",
+                "religion VARCHAR(50)",
+                "height VARCHAR(20)",
+                "weight VARCHAR(20)",
+                "birthdate DATE",
+                "nationality VARCHAR(50)"
+            ];
+
+            for (const col of statsColumns) {
+                try {
+                    await connection.query(`ALTER TABLE users ADD COLUMN ${col}`);
+                    console.log(`✅ Added column ${col.split(' ')[0]} to MySQL users table`);
+                } catch (ignore) {}
+            }
+
             try {
                 await connection.query("ALTER TABLE users ADD COLUMN is_onboarded TINYINT(1) DEFAULT 0");
                 console.log('✅ Added is_onboarded column to MySQL users table');

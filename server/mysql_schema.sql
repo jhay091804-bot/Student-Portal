@@ -26,6 +26,12 @@ CREATE TABLE users (
     avatar VARCHAR(255),
     is_verified TINYINT(1) DEFAULT 0,
     is_onboarded TINYINT(1) DEFAULT 0,
+    age INT,
+    religion VARCHAR(50),
+    height VARCHAR(20),
+    weight VARCHAR(20),
+    birthdate DATE,
+    nationality VARCHAR(50),
     verification_token VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -20,14 +20,18 @@ const isSubmitting = ref(false);
 const form = ref({
   address: '',
   phone: '',
-  program: '',
-  year: ''
+  age: '',
+  religion: '',
+  height: '',
+  weight: '',
+  birthdate: '',
+  nationality: 'Filipino'
 });
 
 const steps = [
   { id: 1, title: 'Personal Info', icon: MapPin },
   { id: 2, title: 'Contact Details', icon: Phone },
-  { id: 3, title: 'School Background', icon: GraduationCap }
+  { id: 3, title: 'Personal Identity', icon: User }
 ];
 
 const progress = computed(() => (currentStep.value / steps.length) * 100);
@@ -35,7 +39,14 @@ const progress = computed(() => (currentStep.value / steps.length) * 100);
 const isStepValid = computed(() => {
   if (currentStep.value === 1) return form.value.address.length > 5;
   if (currentStep.value === 2) return form.value.phone.length >= 10;
-  if (currentStep.value === 3) return form.value.program && form.value.year;
+  if (currentStep.value === 3) {
+    return form.value.age && 
+           form.value.religion && 
+           form.value.height && 
+           form.value.weight && 
+           form.value.birthdate && 
+           form.value.nationality;
+  }
   return false;
 });
 
@@ -61,15 +72,8 @@ const handleSubmit = async () => {
   }
 };
 
-const programs = [
-  'BS Computer Science',
-  'BS Information Systems',
-  'BS Computer Engineering',
-  'Bachelor of Secondary Education',
-  'Bachelor of Elementary Education'
-];
-
-const years = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
+const religions = ['Roman Catholic', 'Christian', 'Iglesia ni Cristo', 'Islam', 'Seventh-day Adventist', 'Other'];
+const nationalities = ['Filipino', 'American', 'Chinese', 'Japanese', 'Korean', 'Other'];
 </script>
 
 <template>
@@ -107,7 +111,7 @@ const years = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
       </div>
 
       <!-- Main Content Area -->
-      <div class="flex-1 p-8 md:p-12 flex flex-col justify-between min-h-[500px]">
+      <div class="flex-1 p-8 md:p-12 flex flex-col justify-between min-h-[550px]">
         
         <header class="mb-8">
           <div class="md:hidden flex items-center justify-between mb-4">
@@ -171,30 +175,43 @@ const years = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
               </div>
             </div>
 
-            <!-- Step 3: Academic -->
-            <div v-else-if="currentStep === 3" key="step3" class="space-y-6">
-              <div class="space-y-2">
-                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Degree Program</label>
-                <select 
-                  v-model="form.program"
-                  class="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 text-sm font-black focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer"
-                >
-                  <option value="" disabled>Select your course</option>
-                  <option v-for="p in programs" :key="p" :value="p">{{ p }}</option>
+            <!-- Step 3: Detailed Identity -->
+            <div v-else-if="currentStep === 3" key="step3" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                  <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Birthdate</label>
+                  <input type="date" v-model="form.birthdate" class="w-full bg-white border-2 border-slate-100 rounded-2xl p-3 text-sm font-bold focus:border-primary transition-all outline-none" />
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Age</label>
+                  <input type="number" v-model="form.age" placeholder="20" class="w-full bg-white border-2 border-slate-100 rounded-2xl p-3 text-sm font-bold focus:border-primary transition-all outline-none" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1">
+                  <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Height (cm)</label>
+                  <input type="text" v-model="form.height" placeholder="170 cm" class="w-full bg-white border-2 border-slate-100 rounded-2xl p-3 text-sm font-bold focus:border-primary transition-all outline-none" />
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Weight (kg)</label>
+                  <input type="text" v-model="form.weight" placeholder="60 kg" class="w-full bg-white border-2 border-slate-100 rounded-2xl p-3 text-sm font-bold focus:border-primary transition-all outline-none" />
+                </div>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Religion</label>
+                <select v-model="form.religion" class="w-full bg-white border-2 border-slate-100 rounded-2xl p-3 text-sm font-bold focus:border-primary transition-all outline-none appearance-none">
+                  <option value="" disabled>Select Religion</option>
+                  <option v-for="r in religions" :key="r" :value="r">{{ r }}</option>
                 </select>
               </div>
-              <div class="space-y-2">
-                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Year Level</label>
-                <div class="grid grid-cols-2 gap-3">
-                  <button 
-                    v-for="y in years" 
-                    :key="y"
-                    @click="form.year = y"
-                    :class="['p-3 rounded-xl border-2 text-[10px] font-black transition-all', form.year === y ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-slate-100 text-slate-400 hover:border-slate-200']"
-                  >
-                    {{ y }}
-                  </button>
-                </div>
+
+              <div class="space-y-1">
+                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nationality</label>
+                <select v-model="form.nationality" class="w-full bg-white border-2 border-slate-100 rounded-2xl p-3 text-sm font-bold focus:border-primary transition-all outline-none appearance-none">
+                  <option v-for="n in nationalities" :key="n" :value="n">{{ n }}</option>
+                </select>
               </div>
             </div>
           </transition>

@@ -250,11 +250,15 @@ app.post('/api/auth/login',
 app.put('/api/auth/onboard', authenticateToken, 
   body('address').trim().notEmpty().escape(),
   body('phone').trim().notEmpty().escape(),
-  body('program').trim().notEmpty().escape(),
-  body('year').trim().notEmpty().escape(),
+  body('age').isInt({ min: 14, max: 100 }),
+  body('religion').trim().notEmpty().escape(),
+  body('height').trim().notEmpty().escape(),
+  body('weight').trim().notEmpty().escape(),
+  body('birthdate').isDate(),
+  body('nationality').trim().notEmpty().escape(),
   validate,
   (req, res) => {
-    const { address, phone, program, year } = req.body;
+    const { address, phone, age, religion, height, weight, birthdate, nationality } = req.body;
     const userId = req.user.id;
 
     if (req.user.role !== 'student') {
@@ -262,10 +266,13 @@ app.put('/api/auth/onboard', authenticateToken,
     }
 
     db.run(
-      "UPDATE users SET address = ?, phone = ?, program = ?, year = ?, is_onboarded = 1 WHERE id = ?",
-      [address, phone, program, year, userId],
+      "UPDATE users SET address = ?, phone = ?, age = ?, religion = ?, height = ?, weight = ?, birthdate = ?, nationality = ?, is_onboarded = 1 WHERE id = ?",
+      [address, phone, age, religion, height, weight, birthdate, nationality, userId],
       function(err) {
-        if (err) return res.status(500).json({ error: 'Failed to update profile' });
+        if (err) {
+          console.error('Onboarding Update Error:', err.message);
+          return res.status(500).json({ error: 'Failed to update profile' });
+        }
         
         db.get("SELECT * FROM users WHERE id = ?", [userId], (err, user) => {
           if (err || !user) return res.status(500).json({ error: 'Failed to retrieve updated profile' });
