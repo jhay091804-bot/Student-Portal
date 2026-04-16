@@ -211,6 +211,35 @@ app.post('/api/auth/login',
     });
 });
 
+app.put('/api/auth/onboard', authenticateToken, 
+  body('address').trim().notEmpty().escape(),
+  body('phone').trim().notEmpty().escape(),
+  body('program').trim().notEmpty().escape(),
+  body('year').trim().notEmpty().escape(),
+  validate,
+  (req, res) => {
+    const { address, phone, program, year } = req.body;
+    const userId = req.user.id;
+
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ error: 'Only students can be onboarded' });
+    }
+
+    db.run(
+      "UPDATE users SET address = ?, phone = ?, program = ?, year = ?, is_onboarded = 1 WHERE id = ?",
+      [address, phone, program, year, userId],
+      function(err) {
+        if (err) return res.status(500).json({ error: 'Failed to update profile' });
+        
+        db.get("SELECT * FROM users WHERE id = ?", [userId], (err, user) => {
+          if (err || !user) return res.status(500).json({ error: 'Failed to retrieve updated profile' });
+          const { password: _, ...userData } = user;
+          res.json({ success: true, user: userData });
+        });
+      }
+    );
+});
+
 const { sendVerificationEmail } = require('./mailer');
 
 app.post('/api/auth/register', 

@@ -14,9 +14,9 @@ import {
 import { usePortalStore } from '../stores/portalStore';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
-import { onMounted, ref } from 'vue';
 import SkeletonLoader from '../components/SkeletonLoader.vue';
 import AttendanceHeatmap from '../components/AttendanceHeatmap.vue';
+import OnboardingModal from '../components/OnboardingModal.vue';
 
 const store = usePortalStore();
 const { user, schedule } = storeToRefs(store);
@@ -47,6 +47,10 @@ const navigateTo = (routeName) => {
 
 <template>
   <div class="p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
+    
+    <!-- Mandatory Onboarding for Students -->
+    <OnboardingModal v-if="user?.role === 'student' && !user?.is_onboarded" />
+
     <!-- Welcome Header -->
     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>

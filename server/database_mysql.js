@@ -70,6 +70,14 @@ const initDbMysql = async () => {
                 );
                 console.log('🔄 Default Admin password hash repaired successfully');
             }
+
+            // ADD COLUMN REPAIR: Ensure is_onboarded exists for existing users
+            try {
+                await connection.query("ALTER TABLE users ADD COLUMN is_onboarded TINYINT(1) DEFAULT 0");
+                console.log('✅ Added is_onboarded column to MySQL users table');
+            } catch (ignore) {
+                // Column likely already exists
+            }
         }
         
         connection.release();

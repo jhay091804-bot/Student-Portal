@@ -24,6 +24,7 @@ const initDb = () => {
           balance REAL DEFAULT 0.00,
           avatar TEXT,
           is_verified INTEGER DEFAULT 0,
+          is_onboarded INTEGER DEFAULT 0,
           verification_token TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )

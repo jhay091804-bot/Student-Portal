@@ -361,6 +361,20 @@ export const usePortalStore = defineStore('portal', {
         return false;
       }
     },
+    async onboardUser(data) {
+      try {
+        const response = await api.put('/auth/onboard', data);
+        if (response.data.success) {
+          this.user = response.data.user;
+          localStorage.setItem('chcci_active_user', JSON.stringify(this.user));
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('Onboarding failed:', error);
+        return false;
+      }
+    },
     async updateProfile(profileData) {
       try {
         const response = await api.put('/student/profile', profileData);

@@ -25,6 +25,7 @@ CREATE TABLE users (
     balance DECIMAL(10, 2) DEFAULT 0.00,
     avatar VARCHAR(255),
     is_verified TINYINT(1) DEFAULT 0,
+    is_onboarded TINYINT(1) DEFAULT 0,
     verification_token VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
