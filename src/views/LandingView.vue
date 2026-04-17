@@ -240,7 +240,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white font-sans text-slate-900 selection:bg-[#D4AF37]/20 selection:text-[#002147] overflow-x-hidden">
+  <div class="min-h-screen bg-slate-950 font-sans text-white selection:bg-[#D4AF37]/20 selection:text-white overflow-x-hidden">
     
     <!-- Professional Header (Glass Style) -->
     <header class="fixed top-0 inset-x-0 z-[100] h-20 border-b border-white/10 glass-card-dark">
@@ -269,9 +269,9 @@ onMounted(() => {
     </header>
 
     <!-- Hero Section (Immersive Design) -->
-    <main class="relative min-h-[85vh] flex items-center pt-20 overflow-hidden bg-[#020617]">
-      <!-- New Premium Backdrop (Enhanced Clarity) -->
-      <img src="/campus_generated.png" class="absolute inset-0 w-full h-full object-cover opacity-60" alt="Campus Backdrop" />
+    <main class="relative min-h-[85vh] flex items-center pt-20 overflow-hidden bg-transparent">
+      <!-- New Premium Backdrop (Fixed Sticky Behavior) -->
+      <img src="/campus_generated.png" class="fixed inset-0 w-full h-full object-cover opacity-60 pointer-events-none z-0" alt="Campus Backdrop" />
       
       <!-- Animated Background Blobs -->
       <div class="blob w-96 h-96 bg-[#0f172a] top-[-10%] left-[-10%]"></div>
@@ -346,7 +346,9 @@ onMounted(() => {
     </main>
 
     <!-- Public Announcements Section -->
-    <section v-if="store.announcements && store.announcements.length > 0" class="py-24 bg-[#020617] border-y border-white/5 relative overflow-hidden">
+    <section v-if="store.announcements && store.announcements.length > 0" class="py-24 bg-transparent border-y border-white/5 relative overflow-hidden">
+      <!-- Background Overlay for Readability -->
+      <div class="absolute inset-0 bg-[#020617]/40 backdrop-blur-sm"></div>
       <!-- Animated Glow -->
       <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[300px] bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none"></div>
 
@@ -404,7 +406,7 @@ onMounted(() => {
     </section>
 
     <!-- Success Stats Center (Glass Style) -->
-    <section id="stats" class="py-16 bg-[#020617] relative overflow-hidden">
+    <section id="stats" class="py-16 bg-transparent relative overflow-hidden">
       <div class="max-w-7xl mx-auto px-6">
         <div class="glass-card rounded-2xl p-10 shadow-2xl relative z-10 animate-reveal">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-16">
@@ -423,7 +425,7 @@ onMounted(() => {
     </section>
 
     <!-- Objectives (Satisfying 3D Cards) -->
-    <section id="mission" class="py-32 bg-[#020617] text-center relative overflow-hidden [perspective:2000px]">
+    <section id="mission" class="py-32 bg-transparent text-center relative overflow-hidden [perspective:2000px]">
        <!-- Decoration -->
        <div class="absolute top-1/2 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
 
@@ -455,7 +457,7 @@ onMounted(() => {
     </section>
 
     <!-- Vision & Mission (Split Premium Design) -->
-    <section class="py-24 bg-[#020617] relative overflow-hidden">
+    <section class="py-24 bg-transparent relative overflow-hidden">
       <!-- Decor -->
       <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px]"></div>
       
@@ -480,13 +482,20 @@ onMounted(() => {
     </section>
 
     <!-- Courses / Programs Showcase (The 7 Pillars) -->
-    <section class="py-32 bg-[#020617] relative">
-      <div class="max-w-7xl mx-auto px-6 text-center">
-        <div class="inline-flex items-center gap-3 px-6 py-2 bg-[#D4AF37]/10 rounded-full border border-[#D4AF37]/20 mb-6">
-           <GraduationCap class="w-4 h-4 text-[#D4AF37]" />
-           <span class="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.3em]">Official Course Offerings</span>
+    <section class="py-32 bg-transparent relative">
+      <!-- Background Overlay for Readability -->
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"></div>
+      <div class="max-w-7xl mx-auto px-6 relative z-10">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+          <div class="space-y-4 text-center md:text-left">
+            <div class="inline-flex items-center gap-3 px-6 py-2 bg-[#D4AF37]/10 rounded-full border border-[#D4AF37]/20">
+               <GraduationCap class="w-4 h-4 text-[#D4AF37]" />
+               <span class="text-[10px] font-black text-[#D4AF37] uppercase tracking-[0.3em]">Official Course Offerings</span>
+            </div>
+            <h2 class="text-5xl font-black text-white tracking-tighter">Academic Pathways</h2>
+          </div>
+          <p class="text-white/40 font-medium max-w-md text-center md:text-right hidden sm:block">Explore our diverse range of accredited degree programs designed to prepare you for the global workforce.</p>
         </div>
-        <h2 class="text-5xl font-black text-white mb-20 tracking-tighter">Academic Pathways</h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
            <div v-for="prog in programs" :key="prog.code" class="group p-8 rounded-[2rem] glass-card-dark border border-white/5 transition-all duration-500 hover:bg-white/5 text-left relative overflow-hidden flex flex-col justify-between min-h-[320px]">
@@ -695,7 +704,9 @@ onMounted(() => {
     <FloatingChatBot />
 
     <!-- Corporate Footer (HCC Style) -->
-    <footer class="py-24 bg-[#0f172a] relative z-10 overflow-hidden">
+    <footer class="py-24 bg-transparent relative z-10 overflow-hidden border-t border-white/5">
+      <!-- Background Overlay for consistency -->
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md"></div>
       <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
       <div class="max-w-7xl mx-auto px-6 relative z-10">
         <div class="flex flex-col md:flex-row items-center justify-between gap-12 border-b border-white/10 pb-16 mb-16 px-10">
