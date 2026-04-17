@@ -1088,6 +1088,65 @@ app.put('/api/settings', authenticateToken, isAdmin, (req, res) => {
   });
 });
 
+// --- ANNOUNCEMENTS SYSTEM ---
+
+// Public: Get all active announcements
+app.get('/api/public/announcements', (req, res) => {
+  db.all("SELECT * FROM announcements WHERE is_active = 1 ORDER BY created_at DESC", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch failed' });
+    res.json(rows);
+  });
+});
+
+// Admin: Get all announcements
+app.get('/api/announcements', authenticateToken, isAdmin, (req, res) => {
+  db.all("SELECT * FROM announcements ORDER BY created_at DESC", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch failed' });
+    res.json(rows);
+  });
+});
+
+// Admin: Create announcement
+app.post('/api/announcements', 
+  authenticateToken, 
+  isAdmin, 
+  body('title').trim().notEmpty().escape(),
+  body('content').trim().notEmpty(),
+  validate, 
+  (req, res) => {
+    const { title, content, type, target_date } = req.body;
+    db.run(
+      "INSERT INTO announcements (title, content, type, target_date) VALUES (?, ?, ?, ?)",
+      [title, content, type || 'general', target_date || null],
+      function(err) {
+        if (err) return res.status(500).json({ error: 'Creation failed' });
+        res.status(201).json({ id: this.lastID, title, content, type, target_date });
+      }
+    );
+});
+
+// Admin: Update announcement
+app.put('/api/announcements/:id', authenticateToken, isAdmin, (req, res) => {
+  const { title, content, type, target_date, is_active } = req.body;
+  const id = req.params.id;
+  db.run(
+    "UPDATE announcements SET title = ?, content = ?, type = ?, target_date = ?, is_active = ? WHERE id = ?",
+    [title, content, type, target_date, is_active, id],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Update failed' });
+      res.json({ message: 'Announcement updated' });
+    }
+  );
+});
+
+// Admin: Delete announcement
+app.delete('/api/announcements/:id', authenticateToken, isAdmin, (req, res) => {
+  db.run("DELETE FROM announcements WHERE id = ?", [req.params.id], (err) => {
+    if (err) return res.status(500).json({ error: 'Deletion failed' });
+    res.json({ message: 'Announcement deleted' });
+  });
+});
+
 // Final Catch-all for Frontend SPA (Production)
 if (process.env.NODE_ENV === 'production') {
   app.get('*', (req, res) => {

@@ -160,4 +160,21 @@ INSERT INTO organizations (name, description, type, icon, color, members_count) 
 ('CHCCI Arts Guild', 'Expression through visual and performing arts.', 'Arts', 'Palette', 'text-purple-600', 45),
 ('CHCCI Gladiators', 'Competitive sports and athletic excellence.', 'Sports', 'Trophy', 'text-red-700', 85);
 
+-- 10. Official Announcements
+CREATE TABLE announcements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    type VARCHAR(50) DEFAULT 'general', -- 'event', 'exam', 'news', 'academic', 'alert'
+    target_date DATE DEFAULT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed Initial Announcements
+INSERT INTO announcements (title, content, type, target_date) VALUES 
+('Enrollment Now Open', 'Welcome students! Online enrollment for the Academic Year 2026-2027 is now officially open.', 'news', '2026-06-01'),
+('Midterm Examinations', 'Please be guided that the midterm examinations will start next week. Ensure all clearances are settled.', 'exam', '2026-04-20'),
+('Campus Foundation Day', 'Celebrating 41 years of excellence. Join us for a week of festivities and athletic competitions.', 'event', '2026-05-15');
+
 -- Password is Admin123!

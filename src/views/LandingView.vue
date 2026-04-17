@@ -34,7 +34,10 @@ import {
   Book,
   Trophy,
   Compass,
-  Sparkles
+  Sparkles,
+  Megaphone,
+  Calendar,
+  Info
 } from 'lucide-vue-next';
 import FloatingChatBot from '../components/FloatingChatBot.vue';
 import SpookyAuth from '../components/SpookyAuth.vue';
@@ -230,6 +233,10 @@ const programs = [
   { name: 'BS Criminology', code: 'BSCrim', icon: Shield, desc: 'Serving justice and safety with ethics and tactical skill.' },
   { name: 'BS Education', code: 'BSED', icon: Book, desc: 'Inspiring minds and shaping the future through teaching.' }
 ];
+
+onMounted(() => {
+  store.fetchPublicAnnouncements();
+});
 </script>
 
 <template>
@@ -337,6 +344,64 @@ const programs = [
         </div>
       </div>
     </main>
+
+    <!-- Public Announcements Section -->
+    <section v-if="store.announcements && store.announcements.length > 0" class="py-24 bg-[#020617] border-y border-white/5 relative overflow-hidden">
+      <!-- Animated Glow -->
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[300px] bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+      <div class="max-w-7xl mx-auto px-6 relative z-10">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+          <div class="space-y-4 text-center md:text-left">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-[#D4AF37]/10 rounded-full border border-[#D4AF37]/20">
+              <Megaphone class="w-4 h-4 text-[#D4AF37]" />
+              <span class="text-[9px] font-black text-[#D4AF37] uppercase tracking-[0.3em]">Official Bulletins</span>
+            </div>
+            <h2 class="text-4xl sm:text-5xl font-black text-white tracking-tighter">Campus Updates</h2>
+          </div>
+          <p class="text-white/40 font-medium max-w-md text-center md:text-right hidden sm:block">Stay informed with the latest news, examination schedules, and upcoming campus events direct from the administration.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div 
+            v-for="(ann, i) in store.announcements" 
+            :key="ann.id"
+            class="group p-8 rounded-[2.5rem] glass-card-dark border border-white/5 hover:bg-white/[0.07] transition-all duration-500 flex flex-col justify-between min-h-[340px] relative overflow-hidden"
+          >
+            <!-- Type Badge Icon -->
+            <div class="absolute -top-6 -right-6 w-24 h-24 bg-white/5 rounded-full flex items-center justify-center group-hover:bg-[#D4AF37]/10 transition-colors">
+               <component :is="ann.type === 'exam' ? Calendar : (ann.type === 'event' ? Sparkles : Info)" class="w-8 h-8 text-white/10 group-hover:text-[#D4AF37]/20" />
+            </div>
+
+            <div class="space-y-6 relative z-10">
+               <div class="flex items-center gap-3">
+                  <span :class="['px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-sm', 
+                    ann.type === 'exam' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 
+                    ann.type === 'event' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 
+                    'bg-blue-500/10 text-blue-500 border border-blue-500/20']">
+                    {{ ann.type }}
+                  </span>
+                  <div v-if="ann.target_date" class="flex items-center gap-1.5 text-white/30 text-[9px] font-bold uppercase tracking-widest">
+                    <Calendar :size="12" /> {{ new Date(ann.target_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }}
+                  </div>
+               </div>
+
+               <div>
+                  <h3 class="text-2xl font-black text-white tracking-tight mb-4 group-hover:text-[#D4AF37] transition-colors leading-tight">{{ ann.title }}</h3>
+                  <p class="text-white/50 text-sm font-medium leading-relaxed line-clamp-4">{{ ann.content }}</p>
+               </div>
+            </div>
+
+            <div class="mt-8 pt-8 border-t border-white/5 flex items-center justify-between relative z-10">
+               <span class="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">{{ new Date(ann.created_at).toLocaleDateString() }}</span>
+               <div class="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-white/20 group-hover:bg-[#D4AF37] group-hover:text-[#002147] transition-all duration-500">
+                  <ArrowRight :size="18" />
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Success Stats Center (Glass Style) -->
     <section id="stats" class="py-16 bg-[#020617] relative overflow-hidden">

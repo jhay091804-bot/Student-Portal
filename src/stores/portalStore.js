@@ -73,6 +73,7 @@ export const usePortalStore = defineStore('portal', {
     events: [],
     organizations: [],
     orgApplications: [], // For Admin
+    announcements: [],
   }),
   getters: {
     isAuthenticated: (state) => !!state.user,
@@ -578,6 +579,59 @@ export const usePortalStore = defineStore('portal', {
       localStorage.setItem('chcci_theme', theme);
       // We apply to body for global access
       document.body.className = `theme-${theme}`;
+    },
+
+    // --- ANNOUNCEMENT ACTIONS ---
+    async fetchPublicAnnouncements() {
+      try {
+        const response = await axios.get(`${API_BASE}/public/announcements`);
+        this.announcements = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('Fetch public announcements failed:', error);
+        return [];
+      }
+    },
+    async fetchAnnouncements() {
+      try {
+        const response = await api.get('/announcements');
+        this.announcements = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('Fetch announcements failed:', error);
+        return [];
+      }
+    },
+    async createAnnouncement(data) {
+      try {
+        const response = await api.post('/announcements', data);
+        this.announcements.unshift(response.data);
+        return true;
+      } catch (error) {
+        console.error('Create announcement failed:', error);
+        return false;
+      }
+    },
+    async updateAnnouncement(id, data) {
+      try {
+        await api.put(`/announcements/${id}`, data);
+        const idx = this.announcements.findIndex(a => a.id === id);
+        if (idx !== -1) this.announcements[idx] = { ...this.announcements[idx], ...data };
+        return true;
+      } catch (error) {
+        console.error('Update announcement failed:', error);
+        return false;
+      }
+    },
+    async deleteAnnouncement(id) {
+      try {
+        await api.delete(`/announcements/${id}`);
+        this.announcements = this.announcements.filter(a => a.id !== id);
+        return true;
+      } catch (error) {
+        console.error('Delete announcement failed:', error);
+        return false;
+      }
     }
   }
 });

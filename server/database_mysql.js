@@ -94,6 +94,28 @@ const initDbMysql = async () => {
             } catch (ignore) {
                 // Column likely already exists
             }
+
+            // --- ANNOUNCEMENTS TABLE AUTO-CREATE ---
+            try {
+                const [annTables] = await connection.query("SHOW TABLES LIKE 'announcements'");
+                if (annTables.length === 0) {
+                    console.log('📢 Creating announcements table...');
+                    await connection.query(`
+                        CREATE TABLE announcements (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            title VARCHAR(255) NOT NULL,
+                            content TEXT NOT NULL,
+                            type VARCHAR(50) DEFAULT 'general',
+                            target_date DATE DEFAULT NULL,
+                            is_active TINYINT(1) DEFAULT 1,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    `);
+                    console.log('✅ Announcements table created successfully');
+                }
+            } catch (err) {
+                console.error('❌ Failed to create announcements table:', err.message);
+            }
         }
         
         connection.release();

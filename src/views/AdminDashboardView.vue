@@ -15,7 +15,7 @@ import UserAvatar from '../components/UserAvatar.vue';
 const store = usePortalStore();
 const router = useRouter();
 const route = useRoute();
-const currentView = ref('dashboard'); // 'dashboard', 'students', 'analytics', 'messages', 'settings', 'org_requests'
+const currentView = ref('dashboard'); // 'dashboard', 'students', 'analytics', 'messages', 'settings', 'org_requests', 'announcements'
 const searchQuery = ref('');
 const isModalOpen = ref(false);
 const editingStudent = ref(null);
@@ -37,15 +37,27 @@ const notifications = ref([
   { id: 2, title: 'System Alert', message: 'Database backup completed successfully.', time: '1 hour ago', unread: false },
 ]);
 
+// --- Announcement Management State ---
+const isAnnouncementModalOpen = ref(false);
+const editingAnnouncement = ref(null);
+const announcementForm = ref({
+  title: '',
+  content: '',
+  type: 'general',
+  target_date: '',
+  is_active: 1
+});
+
 onMounted(() => {
   const queryView = route.query.view;
-  const validViews = ['dashboard', 'students', 'analytics', 'messages', 'settings', 'org_requests'];
+  const validViews = ['dashboard', 'students', 'analytics', 'messages', 'settings', 'org_requests', 'announcements'];
   if (queryView && validViews.includes(queryView)) {
     currentView.value = queryView;
   }
   loadAllData();
   startConversationsPolling();
   store.fetchOrgApplications();
+  store.fetchAnnouncements();
 });
 
 const setView = (v) => {
@@ -57,7 +69,7 @@ const setView = (v) => {
 
 // Sync view with URL query changes
 watch(() => route.query.view, (newView) => {
-  const validViews = ['dashboard', 'students', 'analytics', 'messages', 'settings', 'org_requests'];
+  const validViews = ['dashboard', 'students', 'analytics', 'messages', 'settings', 'org_requests', 'announcements'];
   if (newView && validViews.includes(newView)) {
     currentView.value = newView;
   } else if (!newView) {
@@ -192,6 +204,41 @@ const handleSignOut = () => {
   store.signOut();
 };
 
+// --- Announcement Logic ---
+const openAnnouncementModal = (ann = null) => {
+  if (ann) {
+    editingAnnouncement.value = ann;
+    announcementForm.value = { ...ann, target_date: ann.target_date ? ann.target_date.split('T')[0] : '' };
+  } else {
+    editingAnnouncement.value = null;
+    announcementForm.value = { title: '', content: '', type: 'general', target_date: '', is_active: 1 };
+  }
+  isAnnouncementModalOpen.value = true;
+};
+
+const handleSaveAnnouncement = async () => {
+  let success;
+  if (editingAnnouncement.value) {
+    success = await store.updateAnnouncement(editingAnnouncement.value.id, announcementForm.value);
+  } else {
+    success = await store.createAnnouncement(announcementForm.value);
+  }
+  
+  if (success) {
+    isAnnouncementModalOpen.value = false;
+    alert('Announcement saved successfully!');
+  } else {
+    alert('Failed to save announcement.');
+  }
+};
+
+const handleDeleteAnnouncement = async (id) => {
+  if (confirm('Are you sure you want to delete this announcement?')) {
+    const success = await store.deleteAnnouncement(id);
+    if (success) alert('Announcement deleted.');
+  }
+};
+
 const filteredStudents = computed(() => {
   return store.students.filter(s => 
     s.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -223,7 +270,7 @@ const getProgramPercentage = (count) => {
         <!-- Quick Actions / View Switcher (Old School Tabs) -->
         <div class="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
           <button 
-            v-for="view in ['dashboard', 'students', 'analytics', 'messages', 'org_requests', 'settings']" 
+            v-for="view in ['dashboard', 'students', 'announcements', 'analytics', 'messages', 'org_requests', 'settings']" 
             :key="view"
             @click="setView(view)"
             :class="['px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-300', currentView === view ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'text-gray-400 hover:text-gray-900']"
@@ -428,6 +475,65 @@ const getProgramPercentage = (count) => {
           <div v-if="filteredStudents.length === 0" class="py-16 text-center text-gray-400">
              <Search :size="48" class="mx-auto mb-4 opacity-20" />
              <p class="font-bold">No students found.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: ANNOUNCEMENTS -->
+      <div v-if="currentView === 'announcements'" class="space-y-6 animate-in slide-in-from-bottom-5 duration-700">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 class="text-2xl font-black text-gray-900 tracking-tight">Public Announcements</h2>
+            <p class="text-sm text-gray-500 font-medium italic">Manage news and events visible on the landing page.</p>
+          </div>
+          <button @click="openAnnouncementModal()" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary hover:bg-red-800 text-white px-6 py-3.5 rounded-2xl font-bold uppercase tracking-widest text-xs transition-all shadow-lg shadow-primary/20 active:scale-95">
+            <Plus :size="18" /> Post Announcement
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div 
+            v-for="ann in store.announcements" 
+            :key="ann.id"
+            class="bg-white p-6 rounded-[2.5rem] border border-gray-100 card-shadow flex flex-col justify-between gap-6 group hover:translate-y-[-4px] transition-all"
+          >
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span :class="['px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest', 
+                  ann.type === 'exam' ? 'bg-red-50 text-red-600' : 
+                  ann.type === 'event' ? 'bg-amber-50 text-amber-600' : 
+                  'bg-blue-50 text-blue-600']">
+                  {{ ann.type }}
+                </span>
+                <span v-if="ann.target_date" class="text-[9px] font-bold text-gray-400 uppercase">
+                  {{ new Date(ann.target_date).toLocaleDateString() }}
+                </span>
+              </div>
+              <div>
+                <h3 class="font-black text-gray-900 line-clamp-1 group-hover:text-primary transition-colors text-lg">{{ ann.title }}</h3>
+                <p class="text-xs text-gray-500 font-medium line-clamp-3 leading-relaxed mt-2">{{ ann.content }}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t border-gray-50">
+              <div class="flex items-center gap-2">
+                <div :class="['w-2 h-2 rounded-full', ann.is_active ? 'bg-green-500' : 'bg-gray-300']"></div>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{{ ann.is_active ? 'Visible' : 'Hidden' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button @click="openAnnouncementModal(ann)" class="p-2 text-gray-400 hover:text-primary transition-colors">
+                  <Edit2 :size="16" />
+                </button>
+                <button @click="handleDeleteAnnouncement(ann.id)" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                  <Trash2 :size="16" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="store.announcements.length === 0" class="col-span-full py-20 text-center space-y-4 opacity-30">
+            <Megaphone class="w-16 h-16 mx-auto" />
+            <p class="text-xl font-bold">No announcements posted yet.</p>
           </div>
         </div>
       </div>
@@ -689,6 +795,60 @@ const getProgramPercentage = (count) => {
         :default-tab="initialTab"
         @close="isModalOpen = false; loadAllData()"
       />
+
+      <!-- Announcement Modal -->
+      <div v-if="isAnnouncementModalOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-6">
+        <div @click="isAnnouncementModalOpen = false" class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.25)] p-0 overflow-hidden animate-in zoom-in-95">
+          <div class="p-8 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
+            <div>
+              <h3 class="text-xl font-black text-gray-900 tracking-tight">{{ editingAnnouncement ? 'Edit Announcement' : 'Post Announcement' }}</h3>
+              <p class="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mt-1">Campus Communication Hub</p>
+            </div>
+            <button @click="isAnnouncementModalOpen = false" class="p-2 text-gray-400 hover:text-gray-900 transition-colors">
+              <X :size="24" />
+            </button>
+          </div>
+          
+          <div class="p-8 space-y-5">
+            <div class="space-y-1">
+              <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Title</label>
+              <input v-model="announcementForm.title" type="text" placeholder="e.g. Schedule for Preliminary Exams" class="w-full bg-gray-50 border-2 border-transparent focus:border-primary/20 rounded-2xl py-3 px-5 outline-none font-bold text-gray-700 transition-all">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category</label>
+                <select v-model="announcementForm.type" class="w-full bg-gray-50 border-2 border-transparent focus:border-primary/20 rounded-2xl py-3 px-4 outline-none font-bold text-gray-700 transition-all appearance-none">
+                  <option value="general">General News</option>
+                  <option value="exam">Examinations</option>
+                  <option value="event">Campus Event</option>
+                  <option value="academic">Academic Update</option>
+                  <option value="alert">Alert/Notice</option>
+                </select>
+              </div>
+              <div class="space-y-1">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Date (Optional)</label>
+                <input v-model="announcementForm.target_date" type="date" class="w-full bg-gray-50 border-2 border-transparent focus:border-primary/20 rounded-2xl py-3 px-4 outline-none font-bold text-gray-700 transition-all">
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Content</label>
+              <textarea v-model="announcementForm.content" rows="4" placeholder="Type the announcement details here..." class="w-full bg-gray-50 border-2 border-transparent focus:border-primary/20 rounded-2xl py-3 px-5 outline-none font-bold text-gray-700 transition-all resize-none"></textarea>
+            </div>
+
+            <div class="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl">
+              <input v-model="announcementForm.is_active" :true-value="1" :false-value="0" type="checkbox" id="is_active_check" class="w-5 h-5 rounded-lg border-2 border-gray-200 text-primary focus:ring-primary/20">
+              <label for="is_active_check" class="text-xs font-bold text-gray-700 select-none">Make visible on landing page immediately</label>
+            </div>
+
+            <button @click="handleSaveAnnouncement" class="w-full bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 hover:bg-red-800 transition-all active:scale-95 mt-4">
+              {{ editingAnnouncement ? 'Update Announcement' : 'Post Announcement' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
