@@ -20,7 +20,7 @@ const isOpen = ref(false);
 const userInput = ref('');
 const isTyping = ref(false);
 const chatScroll = ref(null);
-const chatMode = ref('ai'); // 'ai' or 'admin'
+const chatMode = ref('ai');
 let pollTimer = null;
 
 const messages = ref([
@@ -45,43 +45,7 @@ const scrollToBottom = async () => {
   }
 };
 
-const startPolling = () => {
-  if (pollTimer) return;
-  fetchAdminMessages();
-  pollTimer = setInterval(fetchAdminMessages, 5000);
-};
-
-const stopPolling = () => {
-  if (pollTimer) {
-    clearInterval(pollTimer);
-    pollTimer = null;
-  }
-};
-
-const fetchAdminMessages = async () => {
-  if (chatMode.value !== 'admin' || !isOpen.value) return;
-  const oldLength = store.chatMessages.length;
-  await store.fetchMyMessages();
-  if (store.chatMessages.length > oldLength) {
-    scrollToBottom();
-  }
-};
-
-watch(chatMode, (newMode) => {
-  if (newMode === 'admin' && isOpen.value) {
-    startPolling();
-  } else {
-    stopPolling();
-  }
-});
-
-watch(isOpen, (newOpen) => {
-  if (newOpen && chatMode.value === 'admin') {
-    startPolling();
-  } else {
-    stopPolling();
-  }
-});
+// Polling for admin messages removed as DMs are now in a separate view
 
 onUnmounted(() => {
   stopPolling();
@@ -91,12 +55,7 @@ const handleSend = async (text) => {
   const content = text || userInput.value;
   if (!content.trim() || isTyping.value) return;
 
-  if (chatMode.value === 'admin') {
-    userInput.value = '';
-    await store.sendToAdmin(content);
-    scrollToBottom();
-    return;
-  }
+  // Sending logic for AI Bot
 
   // AI BOT LOGIC
   messages.value.push({
@@ -172,9 +131,7 @@ const formatTime = (dateStr) => {
                 <Headphones v-else class="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 class="font-black text-sm tracking-tight text-white m-0 leading-none">
-                  {{ chatMode === 'ai' ? 'Portal Assistant' : 'Admin Support' }}
-                </h3>
+                <h3 class="font-black text-sm tracking-tight text-white m-0 leading-none">Portal Assistant</h3>
                 <div class="flex items-center gap-1.5 mt-1">
                   <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
                   <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Now</span>
@@ -185,65 +142,25 @@ const formatTime = (dateStr) => {
               <X class="w-5 h-5 text-slate-400" />
             </button>
           </div>
-
-          <!-- Mode Toggle -->
-          <div class="flex bg-white/5 p-1 rounded-xl border border-white/10">
-            <button 
-              @click="chatMode = 'ai'"
-              :class="['flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all', chatMode === 'ai' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white']"
-            >
-              <Sparkles :size="12" /> AI Bot
-            </button>
-            <button 
-              @click="chatMode = 'admin'"
-              :class="['flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all', chatMode === 'admin' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-white']"
-            >
-              <Headphones :size="12" /> Admin
-            </button>
-          </div>
         </div>
 
         <!-- Chat Body -->
         <div ref="chatScroll" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-slate-50">
           <!-- AI Mode Messages -->
-          <template v-if="chatMode === 'ai'">
-            <div v-for="msg in messages" :key="msg.id" :class="['flex w-full', msg.role === 'bot' ? 'justify-start' : 'justify-end']">
-              <div :class="['flex max-w-[85%] gap-2', msg.role === 'user' ? 'flex-row-reverse' : '']">
-                <div :class="['w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm', msg.role === 'bot' ? 'bg-primary text-white' : 'bg-white text-slate-400 border border-slate-100']">
-                  <Bot v-if="msg.role === 'bot'" :size="16" />
-                  <User v-else :size="16" />
+          <div v-for="msg in messages" :key="msg.id" :class="['flex w-full', msg.role === 'bot' ? 'justify-start' : 'justify-end']">
+            <div :class="['flex max-w-[85%] gap-2', msg.role === 'user' ? 'flex-row-reverse' : '']">
+              <div :class="['w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm', msg.role === 'bot' ? 'bg-primary text-white' : 'bg-white text-slate-400 border border-slate-100']">
+                <Bot v-if="msg.role === 'bot'" :size="16" />
+                <User v-else :size="16" />
+              </div>
+              <div class="space-y-1">
+                <div :class="['p-4 rounded-[1.5rem] text-sm leading-relaxed font-medium', msg.role === 'bot' ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm' : 'bg-primary text-white rounded-tr-none shadow-md shadow-primary/10']">
+                  {{ msg.text }}
                 </div>
-                <div class="space-y-1">
-                  <div :class="['p-4 rounded-[1.5rem] text-sm leading-relaxed font-medium', msg.role === 'bot' ? 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm' : 'bg-primary text-white rounded-tr-none shadow-md shadow-primary/10']">
-                    {{ msg.text }}
-                  </div>
-                  <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">{{ msg.time }}</p>
-                </div>
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">{{ msg.time }}</p>
               </div>
             </div>
-          </template>
-
-          <!-- Admin Mode Messages -->
-          <template v-else>
-            <div v-for="msg in store.chatMessages" :key="msg.id" :class="['flex w-full', msg.sender_id === store.user?.id ? 'justify-end' : 'justify-start']">
-              <div :class="['flex max-w-[85%] gap-2', msg.sender_id === store.user?.id ? 'flex-row-reverse' : '']">
-                <div :class="['w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm', msg.sender_id === store.user?.id ? 'bg-primary text-white' : 'bg-white text-slate-400 border border-slate-100']">
-                  <User v-if="msg.sender_id === store.user?.id" :size="16" />
-                  <Headphones v-else :size="16" />
-                </div>
-                <div class="space-y-1">
-                  <div :class="['p-4 rounded-[1.5rem] text-sm leading-relaxed font-medium', msg.sender_id === store.user?.id ? 'bg-primary text-white rounded-tr-none shadow-md shadow-primary/10' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm']">
-                    {{ msg.content }}
-                  </div>
-                  <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">{{ formatTime(msg.created_at) }}</p>
-                </div>
-              </div>
-            </div>
-            <div v-if="store.chatMessages.length === 0" class="flex flex-col items-center justify-center h-full text-center p-8 opacity-40">
-              <MessageCircle :size="48" class="mb-4" />
-              <p class="text-xs font-bold uppercase tracking-widest">No messages yet. Ask the admin anything!</p>
-            </div>
-          </template>
+          </div>
 
           <!-- Typing Indicator -->
           <div v-if="isTyping" class="flex justify-start animate-in fade-in transition-all">
@@ -257,8 +174,8 @@ const formatTime = (dateStr) => {
 
         <!-- Chat Footer / Suggestions -->
         <div class="p-6 bg-white border-t border-slate-100">
-          <!-- Quick Suggestions (AI Only) -->
-          <div v-if="chatMode === 'ai' && messages.length < 3" class="flex flex-wrap gap-2 mb-4">
+          <!-- Quick Suggestions -->
+          <div v-if="messages.length < 3" class="flex flex-wrap gap-2 mb-4">
              <button 
               v-for="s in suggestions" 
               :key="s.text"

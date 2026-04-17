@@ -638,23 +638,41 @@ app.delete('/api/wall/posts/:id', authenticateToken, (req, res) => {
 const ADMIN_ID = 'admin@chcci.edu.ph';
 
 // Get available students to chat with (Students only see Admin, Admins see Students)
+app.get('/api/users/search', authenticateToken, (req, res) => {
+  const query = req.query.q ? `%${req.query.q}%` : '%';
+  const userId = req.user.id;
+  
+  const sql = `
+    SELECT id, name, avatar, role, program, year 
+    FROM users 
+    WHERE (name LIKE ? OR id LIKE ? OR email LIKE ?) 
+    AND id != ?
+    LIMIT 20
+  `;
+  
+  db.all(sql, [query, query, query, userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Search failed' });
+    res.json(rows);
+  });
+});
+
 app.get('/api/chat/contacts', authenticateToken, (req, res) => {
   const userId = req.user.id;
   const isAdmin = req.user.role === 'admin';
   
-  if (isAdmin) {
-    // Admins see all students
-    db.all("SELECT id, name, avatar, program, year FROM users WHERE role = 'student' ORDER BY name ASC", [], (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Fetch contacts failed' });
-      res.json(rows);
-    });
-  } else {
-    // Students ONLY see the Admin
-    db.all("SELECT id, name, avatar FROM users WHERE role = 'admin' AND id = ?", [ADMIN_ID], (err, rows) => {
-      if (err) return res.status(500).json({ error: 'Fetch contacts failed' });
-      res.json(rows);
-    });
-  }
+  // Both Students and Admins see a mix of potential contacts (Admins + recent/top Students)
+  const sql = `
+    SELECT id, name, avatar, role, program, year 
+    FROM users 
+    WHERE id != ? 
+    ORDER BY role = 'admin' DESC, name ASC 
+    LIMIT 50
+  `;
+  
+  db.all(sql, [userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Fetch contacts failed' });
+    res.json(rows);
+  });
 });
 
 // Student: Get messages with a specific person (admin or student)
@@ -678,42 +696,19 @@ app.get('/api/chat/conversations', authenticateToken, (req, res) => {
   const userId = req.user.id;
   const isAdmin = req.user.role === 'admin';
   
-  let query;
-  let params;
-
-  if (isAdmin) {
-    // Admins see all students who have messaged OR been messaged
-    // Refactored to LEFT JOIN so students with no messages yet still appear if desired, 
-    // but better yet, let's keep it to people with history BUT also provide a way to find students.
-    query = `
-      SELECT u.id, u.name, u.avatar, u.program, u.year,
-        (SELECT content FROM messages WHERE (sender_id = u.id OR receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
-        (SELECT created_at FROM messages WHERE (sender_id = u.id OR receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_at,
-        (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
-      FROM users u
-      WHERE u.role = 'student'
-      AND (
-        EXISTS (SELECT 1 FROM messages WHERE sender_id = u.id OR receiver_id = u.id)
-        OR 1=1 -- Show all students for Admin for now so they can initiate chat
-      )
-      ORDER BY last_message_at DESC, u.name ASC
-    `;
-    params = [userId];
-  } else {
-    // Students ONLY see their conversation with Admin
-    query = `
-      SELECT DISTINCT u.id, u.name, u.avatar, u.program, u.year,
-        (SELECT content FROM messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
-        (SELECT created_at FROM messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_at,
-        (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
-      FROM users u
-      JOIN messages m ON (u.id = m.sender_id OR u.id = m.receiver_id)
-      WHERE u.id = ?
-      AND (m.sender_id = ? OR m.receiver_id = ?)
-      ORDER BY last_message_at DESC
-    `;
-    params = [userId, userId, userId, userId, userId, ADMIN_ID, userId, userId];
-  }
+  // Both Students and Admins see anyone they have exchanged messages with
+  query = `
+    SELECT DISTINCT u.id, u.name, u.avatar, u.program, u.year, u.role,
+      (SELECT content FROM messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message,
+      (SELECT created_at FROM messages WHERE (sender_id = u.id AND receiver_id = ?) OR (sender_id = ? AND receiver_id = u.id) ORDER BY created_at DESC LIMIT 1) as last_message_at,
+      (SELECT COUNT(*) FROM messages WHERE sender_id = u.id AND receiver_id = ? AND is_read = 0) as unread_count
+    FROM users u
+    JOIN messages m ON (u.id = m.sender_id OR u.id = m.receiver_id)
+    WHERE (m.sender_id = ? OR m.receiver_id = ?)
+    AND u.id != ?
+    ORDER BY last_message_at DESC
+  `;
+  params = [userId, userId, userId, userId, userId, userId, userId, userId];
 
   db.all(query, params, (err, rows) => {
     if (err) {
@@ -724,23 +719,22 @@ app.get('/api/chat/conversations', authenticateToken, (req, res) => {
   });
 });
 
-// Student: Send message to anyone (Enforced Admin-only for students)
-app.post('/api/chat/messages', authenticateToken, body('content').trim().notEmpty().escape(), validate, (req, res) => {
+app.post('/api/chat/messages', authenticateToken, body('content').trim().notEmpty().escape(), body('receiver_id').trim().notEmpty(), validate, (req, res) => {
   const senderId = req.user.id;
-  const isStudent = req.user.role === 'student';
   const { content, receiver_id } = req.body;
-  
-  // If student, override receiver to ADMIN_ID to be safe
-  const recipient = isStudent ? ADMIN_ID : (receiver_id || null);
-  
-  if (!recipient) return res.status(400).json({ error: 'Receiver ID required' });
 
   db.run(
     "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
-    [senderId, recipient, content],
+    [senderId, receiver_id, content],
     function(err) {
       if (err) return res.status(500).json({ error: 'Message send failed' });
-      res.status(201).json({ id: this.lastID, sender_id: senderId, receiver_id: recipient, content, created_at: new Date() });
+      res.status(201).json({ 
+        id: this.lastID, 
+        sender_id: senderId, 
+        receiver_id: receiver_id, 
+        content, 
+        created_at: new Date() 
+      });
     }
   );
 });

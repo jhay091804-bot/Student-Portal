@@ -62,6 +62,7 @@ export const usePortalStore = defineStore('portal', {
     chatMessages: [],
     conversations: [],
     contacts: [],
+    searchResults: [],
     theme: localStorage.getItem('chcci_theme') || 'midnight',
     attendanceData: [
       { date: '2026-03-01', status: 'present' },
@@ -140,6 +141,20 @@ export const usePortalStore = defineStore('portal', {
       } catch (error) {
         console.error('Send message failed:', error);
         return null;
+      }
+    },
+    async searchUsers(query) {
+      if (!query) {
+        this.searchResults = [];
+        return [];
+      }
+      try {
+        const response = await api.get(`/users/search?q=${encodeURIComponent(query)}`);
+        this.searchResults = response.data;
+        return response.data;
+      } catch (error) {
+        console.error('User search failed:', error);
+        return [];
       }
     },
     async markAsRead(peerId) {
