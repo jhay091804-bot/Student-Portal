@@ -579,7 +579,7 @@ onMounted(() => {
                        Can't find it? Check your spam folder or wait a few minutes.
                     </p>
                  </div>
-                 <button @click="authMode = 'login'" class="w-full border-2 border-slate-100 text-slate-400 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">Back to Login</button>
+                 <button @click="showAuthModal = false" class="w-full border-2 border-slate-100 text-slate-400 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">Back to Home</button>
               </div>
 
               <!-- Success/Merging State (Original logic preserved for direct login flow) -->
