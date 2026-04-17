@@ -348,7 +348,7 @@ onMounted(() => {
     <!-- Public Announcements Section -->
     <section v-if="store.announcements && store.announcements.length > 0" class="py-24 bg-transparent border-y border-white/5 relative overflow-hidden">
       <!-- Background Overlay for Readability -->
-      <div class="absolute inset-0 bg-[#020617]/40 backdrop-blur-sm"></div>
+      <div class="absolute inset-0 bg-[#020617]/20 backdrop-blur-sm"></div>
       <!-- Animated Glow -->
       <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[300px] bg-[#D4AF37]/5 rounded-full blur-[120px] pointer-events-none"></div>
 
@@ -484,7 +484,7 @@ onMounted(() => {
     <!-- Courses / Programs Showcase (The 7 Pillars) -->
     <section class="py-32 bg-transparent relative">
       <!-- Background Overlay for Readability -->
-      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"></div>
+      <div class="absolute inset-0 bg-slate-950/20 backdrop-blur-sm"></div>
       <div class="max-w-7xl mx-auto px-6 relative z-10">
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
           <div class="space-y-4 text-center md:text-left">
@@ -706,7 +706,7 @@ onMounted(() => {
     <!-- Corporate Footer (HCC Style) -->
     <footer class="py-24 bg-transparent relative z-10 overflow-hidden border-t border-white/5">
       <!-- Background Overlay for consistency -->
-      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md"></div>
+      <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-md"></div>
       <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
       <div class="max-w-7xl mx-auto px-6 relative z-10">
         <div class="flex flex-col md:flex-row items-center justify-between gap-12 border-b border-white/10 pb-16 mb-16 px-10">
